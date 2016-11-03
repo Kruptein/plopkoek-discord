@@ -27,6 +27,12 @@ class Gateway:
         return get("/gateway")["url"]
 
 
+class Guild:
+    @staticmethod
+    def get_members(guild_id: int, limit=1, after=0):
+        return get("/guilds/{}/members?limit={}&after={}".format(guild_id, limit, after))
+
+
 class Channel:
     @staticmethod
     def create_message(channel_id: int, content: str):
