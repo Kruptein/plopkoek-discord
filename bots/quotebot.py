@@ -32,6 +32,7 @@ class QuoteBot(Bot):
     """
     def __init__(self, stream_log_level=logging.DEBUG, file_log_level=logging.INFO):
         super().__init__("quotebot", stream_log_level=stream_log_level, file_log_level=file_log_level)
+        self.message_count = 0
 
     @command('add', 'append')
     def add_quote(self, event):
@@ -131,6 +132,14 @@ class QuoteBot(Bot):
                 msg += " | ".join(found)
         Channel.create_message(event.channel_id, msg)
 
+    def execute_event(self, event):
+        super().execute_event(event)
+        if event.of_t("MESSAGE_CREATE"):
+            self.message_count += 1
+            if self.message_count == 30:
+                q = get_random_quote()
+                Channel.create_message(event.channel_id, "{} - {}".format(q["quote"], q["quotee"]))
+                self.message_count = 0
 
 if __name__ == "__main__":
     QuoteBot().run(False)
