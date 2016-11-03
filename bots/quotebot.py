@@ -8,8 +8,14 @@ from datetime import datetime
 
 from api.decorators import command
 from api.gateway import Bot
-from api.web import Channel
+from api.web import Channel, Webhook, User
 from utils import get_value, set_value
+
+
+quote_url = u"https://cdn1.iconfinder.com/data/icons/anchor/128/quote.png"
+webhook_id = get_value("quotebot", "webhook_id")
+webhook_token = get_value("quotebot", "webhook_token")
+general_channel_id = get_value("main", "general_channel_id")
 
 
 def get_random_quote():
@@ -22,6 +28,23 @@ def get_random_quote():
         for quote in quotes[quotee]:
             quotelist.append({"quote": quote['quote'], "quotee": quotee})
     return random.choice(quotelist)
+
+
+def post_message(channel_id, content):
+    if channel_id == general_channel_id:
+        Webhook.execute_content(webhook_id, webhook_token, content, "quotebot", avatar_url=quote_url)
+    else:
+        Channel.create_message(channel_id, content)
+
+
+def post_quote(channel_id, quote, quotee):
+    if channel_id == general_channel_id:
+        avatar_url = quote_url
+        if quotee.startswith("<@") and quotee.endswith(">"):
+            avatar_url = User.get_avatar_url(quotee[2:-1])
+        Webhook.execute_content(webhook_id, webhook_token, quote, quotee, avatar_url=avatar_url)
+    else:
+        Channel.create_message(channel_id, "{} - {}".format(quote, quotee))
 
 
 class QuoteBot(Bot):
@@ -46,7 +69,7 @@ class QuoteBot(Bot):
         quote_dict = {'quote': quote, 'added_by': event.author['username'], 'added_on': str(datetime.now())}
         quotes.setdefault(quotee, []).append(quote_dict)
         set_value('quotebot', 'quotes', quotes)
-        Channel.create_message(channel_id=event.channel_id, content='Quote added!')
+        post_message(channel_id=event.channel_id, content='Quote added!')
 
     @command('random')
     def send_random_quote(self, event):
@@ -62,15 +85,15 @@ class QuoteBot(Bot):
                 quotee = components[2]
                 if quotee in quotes:
                     quote = random.choice([q['quote'] for q in quotes[quotee]])
-                    Channel.create_message(event.channel_id, "{} - {}".format(quote, quotee))
+                    post_quote(event.channel_id, quote, quotee)
                 else:
                     msg = "BEEP BOOP, 404 {} not found!".format(quotee)
-                    Channel.create_message(event.channel_id, msg)
+                    post_message(event.channel_id, msg)
             else:
                 q = get_random_quote()
-                Channel.create_message(event.channel_id, "{} - {}".format(q["quote"], q["quotee"]))
+                post_quote(event.channel_id, q['quote'], q['quotee'])
         except IndexError:
-            Channel.create_message(event.channel_id, "No quotes..")
+            post_message(event.channel_id, "No quotes..")
 
     @command('list')
     def list_quotes(self, event):
@@ -88,7 +111,7 @@ class QuoteBot(Bot):
         else:
             msg = "Could not find {} in the pokedex :(\nUse `!quotebot quotees` to list all users with a quote.".format(
                 components[2])
-        Channel.create_message(event.channel_id, msg)
+        post_message(event.channel_id, msg)
 
     @command('quotees')
     def list_quotees(self, event):
@@ -101,7 +124,7 @@ class QuoteBot(Bot):
             msg = "Incorrect command usage.\nUse `!quotebot help quotees` for more information."
         else:
             msg = " | ".join(sorted(quotes.keys()))
-        Channel.create_message(event.channel_id, msg)
+        post_message(event.channel_id, msg)
 
     @command('find')
     def find_quote(self, event):
@@ -130,7 +153,7 @@ class QuoteBot(Bot):
                     return
                 msg = "Found these quotes for {} containing {}: ".format(quotee, sentence)
                 msg += " | ".join(found)
-        Channel.create_message(event.channel_id, msg)
+        post_message(event.channel_id, msg)
 
     def execute_event(self, event):
         super().execute_event(event)
@@ -138,7 +161,7 @@ class QuoteBot(Bot):
             self.message_count += 1
             if self.message_count == 30:
                 q = get_random_quote()
-                Channel.create_message(event.channel_id, "{} - {}".format(q["quote"], q["quotee"]))
+                post_quote(event.channel_id, q["quote"], q["quotee"])
                 self.message_count = 0
 
 if __name__ == "__main__":
