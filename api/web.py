@@ -32,8 +32,15 @@ class Channel:
     def create_message(channel_id: int, content: str):
         return post("/channels/{}/messages".format(channel_id), {'content': content})
 
+
 class User:
     @staticmethod
     def modify_current_user(username: str, avatar):
         return patch("/users/@me", {'username': username, 'avatar': 'data:image/jpeg;base64;{}'.format(avatar)})
 
+
+class Webhook:
+    @staticmethod
+    def execute_content(webhook_id: int, token: str, content: str, username: str = None, avatar_url: str = None):
+        return post("/webhooks/{}/{}".format(webhook_id, token),
+                    {'content': content, 'username': username, 'avatar_url': avatar_url})
