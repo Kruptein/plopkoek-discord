@@ -17,6 +17,10 @@ def post(url: str, data):
     return requests.post('https://discordapp.com/api/v{}{}'.format(API_VERSION, url), json=data, headers=HEADERS)
 
 
+def patch(url: str, data):
+    return requests.patch('https://discordapp.com/api/v{}{}'.format(API_VERSION, url), json=data, headers=HEADERS)
+
+
 class Gateway:
     @staticmethod
     def get_url():
@@ -27,3 +31,9 @@ class Channel:
     @staticmethod
     def create_message(channel_id: int, content: str):
         return post("/channels/{}/messages".format(channel_id), {'content': content})
+
+class User:
+    @staticmethod
+    def modify_current_user(username: str, avatar):
+        return patch("/users/@me", {'username': username, 'avatar': 'data:image/jpeg;base64;{}'.format(avatar)})
+
