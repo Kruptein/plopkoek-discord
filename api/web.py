@@ -35,6 +35,10 @@ class Channel:
 
 class User:
     @staticmethod
+    def get_user(user_id: int):
+        return get("/users/{}".format(user_id))
+
+    @staticmethod
     def modify_current_user(username: str, avatar):
         return patch("/users/@me", {'username': username, 'avatar': 'data:image/jpeg;base64;{}'.format(avatar)})
 
