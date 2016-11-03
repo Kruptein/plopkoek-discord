@@ -41,7 +41,9 @@ def post_quote(channel_id, quote, quotee):
     if channel_id == general_channel_id:
         avatar_url = quote_url
         if quotee.startswith("<@") and quotee.endswith(">"):
-            avatar_url = User.get_avatar_url(quotee[2:-1])
+            user = User.get_user(quotee[2:-1])
+            avatar_url = User.get_avatar_url(user)
+            quotee = user['username']
         Webhook.execute_content(webhook_id, webhook_token, quote, quotee, avatar_url=avatar_url)
     else:
         Channel.create_message(channel_id, "{} - {}".format(quote, quotee))

@@ -45,8 +45,7 @@ class User:
         return get("/users/{}".format(user_id))
 
     @staticmethod
-    def get_avatar_url(user_id: int):
-        user = User.get_user(user_id)
+    def get_avatar_url(user):
         return "https://cdn.discordapp.com/avatars/{}/{}.jpg".format(user['id'], user['avatar'])
 
     @staticmethod
