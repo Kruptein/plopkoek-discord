@@ -1,0 +1,10 @@
+{
+    "quotebot": {
+        "__self__": "Provides a quote database.  Will broadcast a random quote on a set interval.",
+        "add": "Add a new quote to the database.\n\nSyntax: `!quotebot add <quotee> <quote>`\nExample:`!quotebot add darragh ik ben zo goe` will add the quote 'ik ben zo goe' to the database for 'darragh'",
+        "find": "Lookup a sequence in the quote database for a given user. When only one quote is found it will be broadcasted as if it was a random quote, otherwise a list will appear.\n\nSyntax: `!quotebot find <user> <sequence>`\nExample: `!quotebot find tom achterlijk` will show all quotes of 'tom' containing the sequence 'achterlijk'",
+        "list": "Show all quotes for a given user.\n\nSyntax: `!quotebot list <user>`",
+        "quotees": "Show all users with a quote in the database.\n\n`!quotebot quotees`",
+        "random": "Show a random quote from the entire database or from a specific user.\n\nSyntax: `!quotebot random [user]`"
+    }
+}
