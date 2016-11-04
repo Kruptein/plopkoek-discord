@@ -2,6 +2,7 @@
 A collection of various utilities.
 """
 import json
+import logging
 import os
 import pickle
 from enum import IntEnum
@@ -17,6 +18,24 @@ class ConfigFormat(IntEnum):
 
 def get_log_path(name):
     return os.path.join(ROOTDIR, "logs", "{}.log".format(name))
+
+
+def get_logger(name, file_log_level=logging.INFO, stream_log_level=logging.INFO):
+    logger = logging.getLogger(name)
+    formatter = logging.Formatter('%(threadName)s: %(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    # add file logger
+    path = get_log_path(name)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    fh = logging.FileHandler(path)
+    fh.setLevel(file_log_level)
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+    # add stream logger
+    sh = logging.StreamHandler()
+    sh.setLevel(stream_log_level)
+    sh.setFormatter(formatter)
+    logger.addHandler(sh)
+    return logger
 
 
 def get_data(name, data_format=ConfigFormat.JSON):
