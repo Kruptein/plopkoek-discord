@@ -1,4 +1,8 @@
+import logging
+
 from enum import IntEnum
+
+from utils import get_logger
 
 
 def get_event(json_data) -> 'Event':
@@ -27,9 +31,12 @@ class Event:
         self._op = data['op']
         self.raw_data = data
 
-        if data['d'] is not None:
-            for var in data['d']:
-                setattr(self, var, data['d'][var])
+        try:
+            if data['d'] is not None:
+                for var in data['d']:
+                    setattr(self, var, data['d'][var])
+        except:
+            get_logger('main').exception("Could not extrapolate data from event.")
 
         self.is_dispatch = self.of(GatewayOP.DISPATCH)
 
