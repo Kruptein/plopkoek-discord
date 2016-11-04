@@ -10,7 +10,7 @@ from datetime import datetime
 from api.decorators import command
 from api.gateway import Bot
 from api.web import Channel, Webhook, User
-from utils import get_value, set_value
+from utils import get_value, set_value, get_logger
 
 quote_url = u"https://cdn1.iconfinder.com/data/icons/anchor/128/quote.png"
 webhook_id = get_value("quotebot", "webhook_id")
@@ -37,7 +37,10 @@ def get_username(quotee):
     If quotee is a <@ID> formatted string, ths function will retrieve the username for given user id.
     """
     if quotee.startswith("<@") and quotee.endswith(">"):
-        return User.get_user(quotee[2:-1])['username']
+        try:
+            return User.get_user(quotee[2:-1])['username']
+        except KeyError:
+            get_logger("QuoteBot").exception("Failed to get username for {}".format(quotee))
     return quotee
 
 
