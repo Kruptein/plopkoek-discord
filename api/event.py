@@ -34,7 +34,7 @@ class Event:
                 for var in data['d']:
                     setattr(self, var, data['d'][var])
         except:
-            get_logger('main').exception("Could not extrapolate data from event.")
+            get_logger('main').exception("Could not extrapolate data from event. {}".format(data))
 
         self.is_dispatch = self.of(GatewayOP.DISPATCH)
 
