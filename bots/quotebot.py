@@ -164,7 +164,7 @@ class QuoteBot(Bot):
         Display some stats, i.e. show the total quote count and a top 3 of users with most quotes
         """
         quotes = get_value("quotebot", "quotes")
-        counter = Counter({quotee: quotes[quotee] for quotee in quotes})
+        counter = Counter({quotee: len(quotes[quotee]) for quotee in quotes})
         post_message(event.channel_id, "Total quote count: {}".format(sum(counter.values())))
         post_message(event.channel_id, "Quote top3: {}".format(
             " ".join("{}({})".format(quotee, num) for quotee, num in counter.most_common(3))))
