@@ -4,13 +4,13 @@ Provides a quotebot allowing users to add and traverse quotes.
 
 import logging
 import random
+from collections import Counter
 from datetime import datetime
 
 from api.decorators import command
 from api.gateway import Bot
 from api.web import Channel, Webhook, User
 from utils import get_value, set_value
-
 
 quote_url = u"https://cdn1.iconfinder.com/data/icons/anchor/128/quote.png"
 webhook_id = get_value("quotebot", "webhook_id")
@@ -55,6 +55,7 @@ class QuoteBot(Bot):
     Will post a random quote every 30 messages.
     Also provides a lenny gimmick.
     """
+
     def __init__(self, stream_log_level=logging.DEBUG, file_log_level=logging.INFO):
         super().__init__("quotebot", stream_log_level=stream_log_level, file_log_level=file_log_level)
         self.message_count = 0
@@ -157,6 +158,17 @@ class QuoteBot(Bot):
                 msg += " | ".join(found)
         post_message(event.channel_id, msg)
 
+    @command('stats')
+    def show_stats(self, event):
+        """
+        Display some stats, i.e. show the total quote count and a top 3 of users with most quotes
+        """
+        quotes = get_value("quotebot", "quotes")
+        counter = Counter({quotee: quotes[quotee] for quotee in quotes})
+        post_message(event.channel_id, "Total quote count: {}".format(sum(counter.values())))
+        post_message(event.channel_id, "Quote top3: {}".format(
+            " ".join("{}({})".format(quotee, num) for quotee, num in counter.most_common(3))))
+
     def execute_event(self, event):
         super().execute_event(event)
         if event.of_t("MESSAGE_CREATE"):
@@ -165,6 +177,7 @@ class QuoteBot(Bot):
                 q = get_random_quote()
                 post_quote(event.channel_id, q["quote"], q["quotee"])
                 self.message_count = 0
+
 
 if __name__ == "__main__":
     QuoteBot().run(False)
