@@ -5,7 +5,8 @@ A collection of decorators.
 from functools import wraps
 
 from api import local
-from api.utils import USE_CACHE
+from api import utils
+from api.exceptions import NotCachedException
 
 
 def cache(func):
@@ -15,7 +16,7 @@ def cache(func):
     """
     @wraps(func)
     def decorator(*args, **kwargs):
-        if not USE_CACHE:
+        if not utils.USE_CACHE:
             return func(*args, **kwargs)
 
         try:
@@ -25,7 +26,10 @@ def cache(func):
             # there is no local version of this endpoint, so return live function
             return func(*args, **kwargs)
         else:
-            return local_func(*args, **kwargs)
+            try:
+                return local_func(*args, **kwargs)
+            except NotCachedException:
+                return func(*args, **kwargs)
     return decorator
 
 

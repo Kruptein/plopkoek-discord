@@ -98,7 +98,7 @@ class RtmHandler:
         }))
         ready = json.loads(ws.recv())
         if ready['op'] == 0 and ready['t'] == 'READY':
-            pass
+            get_event(ready)  # Parse the ready event
         else:
             raise Exception("Did not receive ready? Got: {}".format(hello))
 

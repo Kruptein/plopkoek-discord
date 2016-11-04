@@ -1,9 +1,21 @@
+import sys
+
 from enum import IntEnum
 
+from api import cache
 from api.utils import get_logger
 
 
+module = sys.modules[__name__]
+
+
+def __to_classname(event_name: str):
+    return "".join(part.capitalize() for part in event_name.split("_"))
+
+
 def get_event(json_data) -> 'Event':
+    if json_data['op'] == 0 and hasattr(module, __to_classname(json_data['t'])):
+        return getattr(module, __to_classname(json_data['t']))(json_data)
     return Event(json_data)
 
 
@@ -50,3 +62,11 @@ class Event:
 
     def __repr__(self):
         return "Event({})".format(self._t)
+
+
+class Ready(Event):
+    def __init__(self, data):
+        super().__init__(data)
+        cache.update_user(self.user)
+        for channel in self.private_channels:
+            cache.update_user(channel['recipient'])
