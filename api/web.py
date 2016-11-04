@@ -1,6 +1,7 @@
 import requests
 
-from utils import get_value, API_VERSION
+from api.decorators import cache
+from api.utils import get_value, API_VERSION
 
 HEADERS = {
     "Authorization": "Bot {}".format(get_value("main", "discord-token")),
@@ -41,6 +42,7 @@ class Channel:
 
 class User:
     @staticmethod
+    @cache
     def get_user(user_id: int):
         return get("/users/{}".format(user_id))
 

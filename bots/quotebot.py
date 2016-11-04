@@ -9,8 +9,8 @@ from datetime import datetime
 
 from api.decorators import command
 from api.gateway import Bot
+from api.utils import get_value, set_value, get_logger
 from api.web import Channel, Webhook, User
-from utils import get_value, set_value, get_logger
 
 quote_url = u"https://cdn1.iconfinder.com/data/icons/anchor/128/quote.png"
 webhook_id = get_value("quotebot", "webhook_id")

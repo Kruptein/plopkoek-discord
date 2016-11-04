@@ -9,14 +9,14 @@ import logging
 import os
 import threading
 import time
-import websocket
-
 from datetime import datetime
+
+import websocket
 
 from api.event import get_event, GatewayOP
 from api.meta import CommandRegisterType
+from api.utils import get_log_path, get_value, API_VERSION
 from api.web import Gateway, Channel
-from utils import get_log_path, get_value, API_VERSION
 
 
 class RtmHandler:

@@ -1,8 +1,6 @@
-import logging
-
 from enum import IntEnum
 
-from utils import get_logger
+from api.utils import get_logger
 
 
 def get_event(json_data) -> 'Event':
