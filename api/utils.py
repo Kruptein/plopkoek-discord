@@ -9,11 +9,17 @@ from enum import IntEnum
 
 ROOTDIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 API_VERSION = 5
+USE_CACHE = False
 
 
 class ConfigFormat(IntEnum):
     JSON = 0
     PICKLE = 1
+
+
+def activate_cache():
+    global USE_CACHE
+    USE_CACHE = True
 
 
 def get_log_path(name):

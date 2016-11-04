@@ -15,7 +15,7 @@ import websocket
 
 from api.event import get_event, GatewayOP
 from api.meta import CommandRegisterType
-from api.utils import get_log_path, get_value, API_VERSION
+from api.utils import get_log_path, get_value, API_VERSION, activate_cache
 from api.web import Gateway, Channel
 
 
@@ -40,6 +40,9 @@ class RtmHandler:
         # Only add the handlers if they are not added yet. (prevents double handlers when re-instantiating)
         if not self.logger.hasHandlers():
             self.__setup_log_handlers(file_log_level, stream_log_level)
+
+        # Activate caching
+        activate_cache()
 
     def __setup_log_handlers(self, file_log_level, stream_log_level):
         """

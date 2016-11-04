@@ -57,3 +57,7 @@ MainThread: 2016-11-03 10:42:04,292 - EchoBot - INFO - Event(MESSAGE_CREATE)
 MainThread: 2016-11-03 10:42:29,777 - EchoBot - INFO - Event(MESSAGE_UPDATE)
 MainThread: 2016-11-03 10:43:18,551 - EchoBot - INFO - Event(PRESENCE_UPDATE)
 MainThread: 2016-11-03 10:47:13,135 - EchoBot - INFO - Event(PRESENCE_UPDATE)
+MainThread: 2016-11-04 19:45:01,677 - EchoBot - INFO - Started running
+MainThread: 2016-11-04 19:45:01,678 - EchoBot - INFO - Stopped running
+Thread-1: 2016-11-04 19:45:05,149 - EchoBot - INFO - Event(GUILD_CREATE)
+Thread-1: 2016-11-04 19:45:05,150 - EchoBot - INFO - Event(GUILD_CREATE)

@@ -4,10 +4,8 @@ A collection of decorators.
 
 from functools import wraps
 
-import psutil
-
 from api import local
-from api.utils import has_config, get_value
+from api.utils import USE_CACHE
 
 
 def cache(func):
@@ -17,12 +15,9 @@ def cache(func):
     """
     @wraps(func)
     def decorator(*args, **kwargs):
-        # Check if CacheBot is running, if not return live function
-        if not has_config('cachebot'):
+        if not USE_CACHE:
             return func(*args, **kwargs)
-        if not psutil.pid_exists(get_value("cachebot", "pid")):
-            return func(*args, **kwargs)
-        # Call the Cached function
+
         try:
             cls, f = func.__qualname__.split(".")
             local_func = getattr(getattr(local, cls), f)
