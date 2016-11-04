@@ -30,6 +30,17 @@ def get_random_quote():
     return random.choice(quotelist)
 
 
+def get_username(quotee):
+    """
+    Return the username of the given quotee.
+    If quotee is a non formatted string, this function will simply return that string.
+    If quotee is a <@ID> formatted string, ths function will retrieve the username for given user id.
+    """
+    if quotee.startswith("<@") and quotee.endswith(">"):
+        return User.get_user(quotee[2:-1])['username']
+    return quotee
+
+
 def post_message(channel_id, content):
     if channel_id == general_channel_id:
         Webhook.execute_content(webhook_id, webhook_token, content, "quotebot", avatar_url=quote_url)
@@ -46,7 +57,7 @@ def post_quote(channel_id, quote, quotee):
             quotee = user['username']
         Webhook.execute_content(webhook_id, webhook_token, quote, quotee, avatar_url=avatar_url)
     else:
-        Channel.create_message(channel_id, "{} - {}".format(quote, quotee))
+        Channel.create_message(channel_id, "{} - {}".format(quote, get_username(quotee)))
 
 
 class QuoteBot(Bot):
@@ -167,7 +178,7 @@ class QuoteBot(Bot):
         counter = Counter({quotee: len(quotes[quotee]) for quotee in quotes})
         post_message(event.channel_id, "Total quote count: {}".format(sum(counter.values())))
         post_message(event.channel_id, "Quote top3: {}".format(
-            " ".join("{}({})".format(quotee, num) for quotee, num in counter.most_common(3))))
+            " ".join("{}({})".format(get_username(quotee), num) for quotee, num in counter.most_common(3))))
 
     def execute_event(self, event):
         super().execute_event(event)
