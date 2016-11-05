@@ -70,3 +70,56 @@ class Ready(Event):
         cache.update_user(self.user)
         for channel in self.private_channels:
             cache.update_user(channel['recipient'])
+
+
+class Resumed(Event):
+    pass
+
+
+class ChannelCreate(Event):
+    def __init__(self, data):
+        super().__init__(data)
+        if self.is_private and "id" in self.recipient:
+            cache.update_user(self.recipient)
+        cache.update_channel(data['d'])
+
+
+class ChannelUpdate(Event):
+    def __init__(self, data):
+        super().__init__(data)
+        cache.update_channel(data['d'])
+
+
+class ChannelDelete(Event):
+    def __init__(self, data):
+        super().__init__(data)
+        if self.is_private and "id" in self.recipient:
+            cache.update_user(self.recipient)
+        cache.remove_channel(self.id)
+
+
+class GuildCreate(Event):
+    def __init__(self, data):
+        super().__init__(data)
+        cache.update_guild(data['d'])
+        for channel in self.channels:
+            cache.update_channel(channel)
+
+
+class GuildUpdate(Event):
+    def __init__(self, data):
+        super().__init__(data)
+        cache.update_guild(data['d'])
+
+
+class GuildDelete(Event):
+    def __init__(self, data):
+        super().__init__(data)
+        cache.remove_guild(data['d'])
+
+
+class MessageCreate(Event):
+    def __init__(self, data):
+        super().__init__(data)
+        if "webhook_id" not in data['d']:
+            cache.update_user(self.author)
