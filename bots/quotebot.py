@@ -7,6 +7,7 @@ import random
 from collections import Counter
 from datetime import datetime
 
+from api import cache
 from api.decorators import command
 from api.gateway import Bot
 from api.utils import get_value, set_value, get_logger
@@ -41,6 +42,22 @@ def get_username(quotee):
             return User.get_user(quotee[2:-1])['username']
         except KeyError:
             get_logger("QuoteBot").exception("Failed to get username for {}".format(quotee))
+    return quotee
+
+
+def get_userid(quotee):
+    """
+    Return the user id of the given quotee.
+    If quotee is a non formatted string, this function will attempt to lookup the id of the given user.
+    If quotee is a <@ID> formatted string, this function will simply return that string.
+    """
+    if quotee.startswith("<@") and quotee.endswith(">"):
+        return quotee
+
+    users = cache.get_users()
+    for user in users:
+        if users[user]['username'] == quotee:
+            return "<@" + user + ">"
     return quotee
 
 
@@ -120,14 +137,15 @@ class QuoteBot(Bot):
         """
         components = event.content.split(" ")
         quotes = get_value('quotebot', 'quotes')
+        quotee = get_userid(components[2])
         if len(components) != 3:
             msg = "Incorrect command usage.\nUse `!quotebot help list` for more information."
-        elif components[2] in quotes.keys():
-            msg = "{}'s quotes are: ".format(components[2])
-            msg += " | ".join([q['quote'] for q in quotes[components[2]]])
+        elif quotee in quotes.keys():
+            msg = "{}'s quotes are: ".format(get_username(quotee))
+            msg += " | ".join([q['quote'] for q in quotes[quotee]])
         else:
             msg = "Could not find {} in the pokedex :(\nUse `!quotebot quotees` to list all users with a quote.".format(
-                components[2])
+                quotee)
         post_message(event.channel_id, msg)
 
     @command('quotees')
