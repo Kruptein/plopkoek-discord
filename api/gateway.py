@@ -149,7 +149,7 @@ class RtmHandler:
                     elif event.of(GatewayOP.HEARTBEAT_ACK):
                         self.heartbeat_last = datetime.now()
                 time.sleep(1)
-            except (TimeoutError, websocket.WebSocketConnectionClosedException, websocket.WebSocketTimeoutException, ConnectionResetError):
+            except (TimeoutError, websocket.WebSocketConnectionClosedException, websocket.WebSocketTimeoutException, ConnectionResetError, ValueError):
                 parent.logger.warning('Run timed out, restarting in 60 seconds.')
                 time.sleep(60)
                 parent.run(threaded)
