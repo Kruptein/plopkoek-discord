@@ -55,17 +55,14 @@ def get_data(name, data_format=ConfigFormat.JSON):
     """
     cfgpath = os.path.join(ROOTDIR, "config", name)
     open(cfgpath, 'a').close()  # create cfg file if it doesnt exist
-    try:
-        if data_format == ConfigFormat.JSON:
-            with open(cfgpath, 'r') as f:
-                data = json.load(f)
-        elif data_format == ConfigFormat.PICKLE:
-            with open(cfgpath, 'rb') as f:
-                data = pickle.load(f)
-        else:
-            raise Exception("Unknown dataformat")
-    except (EOFError, ValueError):
-        data = {}
+    if data_format == ConfigFormat.JSON:
+        with open(cfgpath, 'r') as f:
+            data = json.load(f)
+    elif data_format == ConfigFormat.PICKLE:
+        with open(cfgpath, 'rb') as f:
+            data = pickle.load(f)
+    else:
+        raise Exception("Unknown dataformat")
     return data
 
 
