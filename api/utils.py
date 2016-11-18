@@ -5,11 +5,14 @@ import json
 import logging
 import os
 import pickle
+import threading
 from enum import IntEnum
 
 ROOTDIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 API_VERSION = 5
 USE_CACHE = False
+
+WRITE_LOCK = threading.Lock()
 
 
 class ConfigFormat(IntEnum):
@@ -68,12 +71,13 @@ def get_data(name, data_format=ConfigFormat.JSON):
 
 def set_data(name, data, data_format=ConfigFormat.JSON):
     cfgpath = os.path.join(ROOTDIR, "config", name)
-    if data_format == ConfigFormat.JSON:
-        with open(cfgpath, 'w') as f:
-            json.dump(data, f, indent=4, sort_keys=True)
-    elif data_format == ConfigFormat.PICKLE:
-        with open(cfgpath, 'wb') as f:
-            pickle.dump(data, f)
+    with WRITE_LOCK:
+        if data_format == ConfigFormat.JSON:
+            with open(cfgpath, 'w') as f:
+                json.dump(data, f, indent=4, sort_keys=True)
+        elif data_format == ConfigFormat.PICKLE:
+            with open(cfgpath, 'wb') as f:
+                pickle.dump(data, f)
 
 
 def get_value(name, var, data_format=ConfigFormat.JSON):
@@ -89,4 +93,6 @@ def set_value(name, var, value, data_format=ConfigFormat.JSON):
     """
     data = get_data(name)
     data[var] = value
+    l = get_logger(name)
+    l.critical("{}:  {} -> {}".format(name, var, value))
     set_data(name, data, data_format)

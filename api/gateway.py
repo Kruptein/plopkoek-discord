@@ -34,15 +34,17 @@ class RtmHandler:
         self.heartbeat_last = datetime.min
         self.last_seq = None
 
+        self.bots = []
+
+        # Activate caching
+        activate_cache()
+
         # setup logger
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.setLevel(logging.DEBUG)
         # Only add the handlers if they are not added yet. (prevents double handlers when re-instantiating)
         if not self.logger.hasHandlers():
             self.__setup_log_handlers(file_log_level, stream_log_level)
-
-        # Activate caching
-        activate_cache()
 
     def __setup_log_handlers(self, file_log_level, stream_log_level):
         """
@@ -149,11 +151,15 @@ class RtmHandler:
                     elif event.of(GatewayOP.HEARTBEAT_ACK):
                         self.heartbeat_last = datetime.now()
                 time.sleep(1)
-            except (TimeoutError, websocket.WebSocketConnectionClosedException, websocket.WebSocketTimeoutException, ConnectionResetError, ValueError):
+            except (TimeoutError, websocket.WebSocketConnectionClosedException, websocket.WebSocketTimeoutException,
+                    ConnectionResetError):
                 parent.logger.warning('Run timed out, restarting in 60 seconds.')
                 time.sleep(60)
                 parent.run(threaded)
                 return
+
+    def start_bot(self, bot: 'Bot'):
+        self.bots.append(bot)
 
     def execute_event(self, event):
         """
@@ -163,9 +169,11 @@ class RtmHandler:
         """
         self.logger.info(event)
         self.logger.debug("\t{}".format(event.raw_data))
+        for bot in self.bots:
+            bot.execute_event(event)
 
 
-class Bot(RtmHandler, metaclass=CommandRegisterType):
+class Bot(metaclass=CommandRegisterType):
     """
     An extension of the RtmHandler class that provides automatic help support based on help files.
     If no help files are found for the bot, a default help message will appear.
@@ -173,9 +181,36 @@ class Bot(RtmHandler, metaclass=CommandRegisterType):
     command_register = {}
 
     def __init__(self, botname, icon_url=None, stream_log_level=logging.WARNING, file_log_level=logging.INFO):
-        super().__init__(stream_log_level, file_log_level)
         self.botname = botname
         self.icon_url = icon_url
+
+        # setup logger
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.setLevel(logging.DEBUG)
+        # Only add the handlers if they are not added yet. (prevents double handlers when re-instantiating)
+        if not self.logger.hasHandlers():
+            self.__setup_log_handlers(file_log_level, stream_log_level)
+
+        self.logger.info("Finished init")
+
+    def __setup_log_handlers(self, file_log_level, stream_log_level):
+        """
+        Setup the log handlers.
+        This includes a file logger which logs to the config directory and a stream logger to log to console.
+        """
+        formatter = logging.Formatter('%(threadName)s: %(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        # add file logger
+        path = get_log_path(self.__class__.__name__)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        fh = logging.FileHandler(path)
+        fh.setLevel(file_log_level)
+        fh.setFormatter(formatter)
+        self.logger.addHandler(fh)
+        # add stream logger
+        sh = logging.StreamHandler()
+        sh.setLevel(stream_log_level)
+        sh.setFormatter(formatter)
+        self.logger.addHandler(sh)
 
     def is_bot_command(self, event):
         """
@@ -200,7 +235,6 @@ class Bot(RtmHandler, metaclass=CommandRegisterType):
         Overwrite this method if you want to act on an event and be sure to call super() if you want to use the
         provided help support.
         """
-        super().execute_event(event)
         if event.of_t('MESSAGE_CREATE'):
             if self.is_bot_command(event):
                 commands = []
