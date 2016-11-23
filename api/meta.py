@@ -4,7 +4,10 @@ class CommandRegisterType(type):
     """
     def __init__(cls, name, bases, attrs):
         for key, val in attrs.items():
-            cmd_names = getattr(val, 'command', None)
-            if cmd_names:
-                for cmd_name in cmd_names:
-                    cls.command_register[cmd_name] = val
+            try:
+                names, format = getattr(val, 'command')
+            except AttributeError:
+                continue
+            else:
+                for _name in names:
+                    cls.command_register[_name] = (val, format)

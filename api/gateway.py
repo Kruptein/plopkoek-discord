@@ -13,6 +13,7 @@ from datetime import datetime
 
 import websocket
 
+from api import parser
 from api.event import get_event, GatewayOP
 from api.meta import CommandRegisterType
 from api.utils import get_log_path, get_value, API_VERSION, activate_cache
@@ -248,28 +249,44 @@ class Bot(metaclass=CommandRegisterType):
         a botcommand.
         The command will contain the command string or will ne None if no further command was given.
         """
+        def start_command(command):
+            cmd, fmt = Bot.command_register[command]
+            try:
+                prefix = len(self.botname) + 2  # bot token + botname + space
+                if command != '*':
+                    prefix += len(command) + 1
+                format_type = parser.apply_format(fmt, event.content[prefix:])
+            except AttributeError as e:
+                Channel.create_message(event.channel_id, str(e))
+                # self.show_help(event.channel_id, command)
+            else:
+                cmd(self, event, format_type)
+
         if len(commands) == 0 or commands[0] == "help":
             if len(commands) <= 1:
                 help_command = "__self__"
             else:
                 help_command = commands[1]
-
-            try:
-                help_messages = get_value('help', self.botname)
-            except KeyError:
-                Channel.create_message(event.channel_id, "I don't provide help. :kappa:")
-                return
-
-            if help_command in help_messages:
-                Channel.create_message(event.channel_id, help_messages[help_command])
-                other_commands = "Commands with help:"
-                for help_command in help_messages:
-                    if help_command == "__self__":
-                        continue
-                    other_commands += ", {}".format(help_command)
-                Channel.create_message(event.channel_id, other_commands)
-            else:
-                Channel.create_message(event.channel_id, "help for {} is not available.".format(help_command))
-
+            self.show_help(event.channel_id, help_command)
         elif commands[0] in Bot.command_register:
-            Bot.command_register[commands[0]](self, event)
+            start_command(commands[0])
+        elif '*' in Bot.command_register:
+            start_command('*')
+
+    def show_help(self, channel_id, command='__self__'):
+        try:
+            help_messages = get_value('help', self.botname)
+        except KeyError:
+            Channel.create_message(channel_id, "I don't provide help. :kappa:")
+            return
+
+        if command in help_messages:
+            Channel.create_message(channel_id, help_messages[command])
+            other_commands = "Commands with help:"
+            for help_command in help_messages:
+                if help_command == "__self__":
+                    continue
+                other_commands += ", {}".format(help_command)
+            Channel.create_message(channel_id, other_commands)
+        else:
+            Channel.create_message(channel_id, "help for {} is not available.".format(command))

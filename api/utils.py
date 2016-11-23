@@ -93,6 +93,23 @@ def set_value(name, var, value, data_format=ConfigFormat.JSON):
     """
     data = get_data(name)
     data[var] = value
-    l = get_logger(name)
-    l.critical("{}:  {} -> {}".format(name, var, value))
     set_data(name, data, data_format)
+
+
+def pop_value(name, var, value):
+    data = get_value(name, var)
+    pop = data.pop(value)
+    set_value(name, var, data)
+    return pop
+
+
+def append_value(name, var, value):
+    data = get_value(name, var)
+    data.append(value)
+    set_value(name, var, data)
+
+
+def update_value(name, var, key, value):
+    data = get_value(name, var)
+    data[key] = value
+    set_value(name, var, data)

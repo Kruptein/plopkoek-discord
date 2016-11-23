@@ -14,6 +14,7 @@ def cache(update_func):
     If CacheBot is running, try to fetch a cached version of the function call.
     Else just run the actual function.
     """
+
     def inner_cache(orig_func):
         @wraps(orig_func)
         def decorator(*args, **kwargs):
@@ -34,16 +35,20 @@ def cache(update_func):
                     data = orig_func(*args, **kwargs)
                     update_func(data)
                     return data
+
         return decorator
+
     return inner_cache
 
 
-def command(*names):
+def command(*names, fmt='*'):
     """
     Registers the provided names as aliases for the decorated function.
      Usage: @command('commandname') or @command('name1', 'name2', ..., 'nameN')
     """
+
     def decorator(func):
-        func.command = names
+        func.command = (names, fmt)
         return func
+
     return decorator

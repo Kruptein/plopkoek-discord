@@ -91,37 +91,33 @@ class QuoteBot(Bot):
         super().__init__("quotebot", stream_log_level=stream_log_level, file_log_level=file_log_level)
         self.message_count = 0
 
-    @command('add', 'append')
-    def add_quote(self, event):
+    @command('add', 'append', fmt='quotee quote>')
+    def add_quote(self, event, args):
         """
         Add a quote to the database.
         This is triggered by a `!quotebot add <username> <quote>` command.
         """
-        quotee = event.content.split(" ")[2]
-        quote = ' '.join(event.content.split(" ")[3:])
         quotes = get_value('quotebot', 'quotes')
-        quote_dict = {'quote': quote, 'added_by': event.author['username'], 'added_on': str(datetime.now())}
-        quotes.setdefault(quotee, []).append(quote_dict)
+        quote_dict = {'quote': args.quote, 'added_by': event.author['username'], 'added_on': str(datetime.now())}
+        quotes.setdefault(args.quotee, []).append(quote_dict)
         set_value('quotebot', 'quotes', quotes)
         post_message(channel_id=event.channel_id, content='Quote added!')
 
-    @command('random')
-    def send_random_quote(self, event):
+    @command('random', fmt="[quotee]")
+    def send_random_quote(self, event, args):
         """
         Send a random quote.
         This is triggered by a `!quotebot random [username]` command.
         """
-        components = event.content.split(" ")
         quotes = get_value('quotebot', 'quotes')
         try:
             # a username was provided
-            if len(components) == 3:
-                quotee = components[2]
-                if quotee in quotes:
-                    quote = random.choice([q['quote'] for q in quotes[quotee]])
-                    post_quote(event.channel_id, quote, quotee)
+            if args.quotee:
+                if args.quotee in quotes:
+                    quote = random.choice([q['quote'] for q in quotes[args.quotee]])
+                    post_quote(event.channel_id, quote, args.quotee)
                 else:
-                    msg = "BEEP BOOP, 404 {} not found!".format(quotee)
+                    msg = "BEEP BOOP, 404 {} not found!".format(args.quotee)
                     post_message(event.channel_id, msg)
             else:
                 q = get_random_quote()
@@ -129,18 +125,15 @@ class QuoteBot(Bot):
         except IndexError:
             post_message(event.channel_id, "No quotes..")
 
-    @command('list')
-    def list_quotes(self, event):
+    @command('list', fmt="quotee")
+    def list_quotes(self, event, args):
         """
         List all quotes for a given user.
         This is triggered by a `!quotebot list <username>` command.
         """
-        components = event.content.split(" ")
         quotes = get_value('quotebot', 'quotes')
-        quotee = get_userid(components[2])
-        if len(components) != 3:
-            msg = "Incorrect command usage.\nUse `!quotebot help list` for more information."
-        elif quotee in quotes.keys():
+        quotee = get_userid(args.quotee)
+        if quotee in quotes.keys():
             msg = "{}'s quotes are: ".format(get_username(quotee))
             msg += " | ".join([q['quote'] for q in quotes[quotee]])
         else:
@@ -149,7 +142,7 @@ class QuoteBot(Bot):
         post_message(event.channel_id, msg)
 
     @command('quotees')
-    def list_quotees(self, event):
+    def list_quotees(self, event, args):
         """
         List all users with a quote in the database.
         This is triggered by a `!quotebot quotees` command.
@@ -162,7 +155,7 @@ class QuoteBot(Bot):
         post_message(event.channel_id, msg)
 
     @command('find')
-    def find_quote(self, event):
+    def find_quote(self, event, args):
         """
         Find quotes containing a given pattern.
         This is triggered by a `!quotebot find <username> <keyword>` command.
@@ -191,7 +184,7 @@ class QuoteBot(Bot):
         post_message(event.channel_id, msg)
 
     @command('stats')
-    def show_stats(self, event):
+    def show_stats(self, event, args):
         """
         Display some stats, i.e. show the total quote count and a top 3 of users with most quotes
         """
@@ -209,7 +202,3 @@ class QuoteBot(Bot):
                 q = get_random_quote()
                 post_quote(event.channel_id, q["quote"], q["quotee"])
                 self.message_count = 0
-
-
-if __name__ == "__main__":
-    QuoteBot().run(False)
