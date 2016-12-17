@@ -55,6 +55,10 @@ class User:
     def modify_current_user(username: str, avatar):
         return patch("/users/@me", {'username': username, 'avatar': 'data:image/jpeg;base64;{}'.format(avatar)})
 
+    @staticmethod
+    def create_dm(recipient_id):
+        return post("/users/@me/channels", {'recipient_id': recipient_id})
+
 
 class Webhook:
     @staticmethod
