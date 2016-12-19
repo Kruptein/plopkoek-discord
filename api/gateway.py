@@ -145,6 +145,13 @@ class RtmHandler:
                 if (datetime.now() - self.heartbeat_last).total_seconds() >= self.heartbeat_interval / 1000:
                     self.__socket.send(json.dumps({'op': 1, 'd': self.last_seq}))
                 event_list = self.__read_socket()
+            except (TimeoutError, websocket.WebSocketConnectionClosedException, websocket.WebSocketTimeoutException,
+                    ConnectionResetError, ValueError):
+                parent.logger.warning('Run timed out, restarting in 60 seconds.')
+                time.sleep(60)
+                parent.run(threaded)
+                return
+            else:
                 for event in event_list:
                     if event.is_dispatch:
                         self.last_seq = event.sequence
@@ -152,12 +159,6 @@ class RtmHandler:
                     elif event.of(GatewayOP.HEARTBEAT_ACK):
                         self.heartbeat_last = datetime.now()
                 time.sleep(1)
-            except (TimeoutError, websocket.WebSocketConnectionClosedException, websocket.WebSocketTimeoutException,
-                    ConnectionResetError):
-                parent.logger.warning('Run timed out, restarting in 60 seconds.')
-                time.sleep(60)
-                parent.run(threaded)
-                return
 
     def start_bot(self, bot: 'Bot'):
         self.bots.append(bot)

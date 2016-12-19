@@ -37,8 +37,12 @@ class PlopkoekBot(Bot):
     def add_plopkoek(self, user_id, donator):
         plopkoeks = get_value("plopkoekbot", "plopkoeks")
         
+        empty_data = {'month_income': 0, 'day_limit': 5, 'day_given_to': [], 'total': 0}
+
         if user_id not in plopkoeks:
-            plopkoeks[user_id] = {'month_income': 0, 'day_limit': 5, 'day_given_to': [], 'total': 0}
+            plopkoeks[user_id] = empty_data
+        if donator not in plopkoeks:
+            plopkoeks[donator] = empty_data
         plopkoeks[user_id]['month_income'] += 1
         plopkoeks[donator]['day_limit'] -= 1
 
