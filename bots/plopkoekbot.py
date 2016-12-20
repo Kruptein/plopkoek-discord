@@ -109,6 +109,10 @@ class PlopkoekBot(Bot):
 
         set_value("plopkoekbot", str(datetime.utcnow().year), year_data)
 
+        dm = User.create_dm(recipient_id=receiver)
+        content = '<@{}> heeft een plopkoek afgepakt :O  Je hebt er nu nog {} deze maand over.'.format(donator, self.get_income(receiver))
+        Channel.create_message(channel_id=dm.json()['id'], content=content)
+
     def execute_event(self, event):
         super().execute_event(event)
         if event.of_t('MESSAGE_CREATE'):
