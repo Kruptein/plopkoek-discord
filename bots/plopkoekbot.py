@@ -100,18 +100,25 @@ class PlopkoekBot(Bot):
     def remove_plopkoek(self, receiver, donator, message_id):
         year_data = self.get_year_data()
 
+        found = False
+
+        if receiver == donator:
+            return
+
         for month in year_data:
             for day in year_data[month]:
                 for data in year_data[month][day]:
                     if data['from'] == donator and data['to'] == receiver and data['message_id'] == message_id:
 
                         year_data[month][day].remove(data)
+                        found = True
 
-        set_value("plopkoekbot", str(datetime.utcnow().year), year_data)
+        if found:
+            set_value("plopkoekbot", str(datetime.utcnow().year), year_data)
 
-        dm = User.create_dm(recipient_id=receiver)
-        content = '<@{}> heeft een plopkoek afgepakt :O  Je hebt er nu nog {} deze maand over.'.format(donator, self.get_income(receiver))
-        Channel.create_message(channel_id=dm.json()['id'], content=content)
+            dm = User.create_dm(recipient_id=receiver)
+            content = '<@{}> heeft een plopkoek afgepakt :O  Je hebt er nu nog {} deze maand over.'.format(donator, self.get_income(receiver))
+            Channel.create_message(channel_id=dm.json()['id'], content=content)
 
     def execute_event(self, event):
         super().execute_event(event)
