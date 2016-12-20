@@ -30,6 +30,8 @@ class PlopkoekBot(Bot):
             self.add_plopkoek(user.strip('<@!>'), donator=event.author['id'], message_id=event.id)
                 
     def donate_plopkoek_reaction(self, event):
+        if not event.emoji['id']:
+            return
         if event.emoji['id'] in plopkoek_emote:
             message = Channel.get_message(event.channel_id, event.message_id)
             receiver = message['author']['id']
@@ -38,6 +40,8 @@ class PlopkoekBot(Bot):
             self.add_plopkoek(receiver, donator, event.message_id)
 
     def remove_plopkoek_reaction(self, event):
+        if not event.emoji['id']:
+            return
         if event.emoji['id'] in plopkoek_emote:
             message = Channel.get_message(event.channel_id, event.message_id)
             receiver = message['author']['id']
@@ -64,15 +68,20 @@ class PlopkoekBot(Bot):
         year_data = self.get_year_data()
         return year_data.get(str(today.month), {}).get(str(today.day), [])
 
+    def get_donations_left(self, donator):
+        return 5 - sum(1 for data in self.get_day_data() if data['from'] == donator)
+
     def can_donate(self, donator, receiver):
         if donator == receiver:
             return False
 
-        day_data = self.get_day_data()
-        donator_data = [data for data in self.get_day_data() if data['from'] == donator]
-        if len(donator_data) > 5:
-            return False
-        return Counter(data["to"] for data in donator_data)[receiver] <= 4
+        return self.get_donations_left(donator) > 0 
+
+        #day_data = self.get_day_data()
+        #donator_data = [data for data in self.get_day_data() if data['from'] == donator]
+        #if len(donator_data) > 5:
+        #    return False
+        #return Counter(data["to"] for data in donator_data)[receiver] <= 4
 
     def add_plopkoek(self, user_id, donator, message_id):
         if not self.can_donate(donator=donator, receiver=user_id):
@@ -97,6 +106,10 @@ class PlopkoekBot(Bot):
         content = 'Je hebt een plopkoek van <@{}> gekregen!  Je hebt er nu {} deze maand verzameld.'.format(donator, self.get_income(user_id))
         Channel.create_message(channel_id=dm.json()['id'], content=content)
 
+        dm = User.create_dm(recipient_id=donator)
+        content = 'Je hebt een plopkoek aan <@{}> gegeven.  Je kan er vandaag nog {} uitgeven.'.format(user_id, self.get_donations_left(donator))
+        Channel.create_message(channel_id=dm.json()['id'], content=content)
+
     def remove_plopkoek(self, receiver, donator, message_id):
         year_data = self.get_year_data()
 
@@ -118,6 +131,10 @@ class PlopkoekBot(Bot):
 
             dm = User.create_dm(recipient_id=receiver)
             content = '<@{}> heeft een plopkoek afgepakt :O  Je hebt er nu nog {} deze maand over.'.format(donator, self.get_income(receiver))
+            Channel.create_message(channel_id=dm.json()['id'], content=content)
+
+            dm = User.create_dm(recipient_id=donator)
+            content = 'Je hebt een plopkoek die je aan <@{}> hebt gegeven teruggenomen.  Je kan er vandaag nog {} uitgeven.'.format(receiver, self.get_donations_left(donator))
             Channel.create_message(channel_id=dm.json()['id'], content=content)
 
     def execute_event(self, event):
