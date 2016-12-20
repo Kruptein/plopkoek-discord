@@ -146,11 +146,13 @@ class RtmHandler:
                     self.__socket.send(json.dumps({'op': 1, 'd': self.last_seq}))
                 event_list = self.__read_socket()
             except (TimeoutError, websocket.WebSocketConnectionClosedException, websocket.WebSocketTimeoutException,
-                    ConnectionResetError, ValueError):
+                    ConnectionResetError):
                 parent.logger.warning('Run timed out, restarting in 60 seconds.')
                 time.sleep(60)
                 parent.run(threaded)
                 return
+            except ValueError as e:
+                parent.logger.warning(e)
             else:
                 for event in event_list:
                     if event.is_dispatch:
