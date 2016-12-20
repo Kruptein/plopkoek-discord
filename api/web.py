@@ -40,6 +40,10 @@ class Channel:
     def create_message(channel_id: int, content: str):
         return post("/channels/{}/messages".format(channel_id), {'content': content})
 
+    @staticmethod
+    def get_message(channel_id: int, message_id: int):
+        return get("/channels/{}/messages/{}".format(channel_id, message_id))
+
 
 class User:
     @staticmethod
