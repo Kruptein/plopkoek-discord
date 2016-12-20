@@ -4,6 +4,9 @@ Provides a quotebot allowing users to add and traverse quotes.
 
 import logging
 
+from collections import Counter
+from datetime import datetime
+
 from api import cache
 from api.decorators import command
 from api.gateway import Bot
@@ -23,35 +26,96 @@ class PlopkoekBot(Bot):
     def donate_plopkoek(self, event):
         if plopkoek_emote in event.content and len(event.content.strip().split(" ")) == 2:
             user = event.content.replace(plopkoek_emote, '').strip()
-            if self.can_donate(event.author['id']):
-                new_income = self.add_plopkoek(user.strip('<@!>'), donator=event.author['id'])
-                dm = User.create_dm(recipient_id=user.strip('<@!>'))
-                Channel.create_message(channel_id=dm.json()['id'], content='Je hebt een plopkoek van <@{}> gekregen!  Je hebt er nu {} deze maand verzameld.'.format(event.author['id'], new_income))
-    
-    def can_donate(self, user_id):
-        plopkoeks = get_value("plopkoekbot", "plopkoeks")
-        if user_id not in plopkoeks:
-            return True
-        return plopkoeks[user_id]['day_limit'] > 0
 
-    def add_plopkoek(self, user_id, donator):
-        plopkoeks = get_value("plopkoekbot", "plopkoeks")
+            self.add_plopkoek(user.strip('<@!>'), donator=event.author['id'], message_id=event.message_id)
+                
+    def donate_plopkoek_reaction(self, event):
+        if event.emoji['id'] in plopkoek_emote:
+            message = Channel.get_message(event.channel_id, event.message_id)
+            receiver = message['author']['id']
+            donator = event.user_id
+
+            self.add_plopkoek(receiver, donator, event.message_id)
+
+    def remove_plopkoek_reaction(self, event):
+        if event.emoji['id'] in plopkoek_emote:
+            message = Channel.get_message(event.channel_id, event.message_id)
+            receiver = message['author']['id']
+            donator = event.user_id
+
+            self.remove_plopkoek(receiver, donator, event.message_id)
+
+    def get_income(self, user_id):
+        today = datetime.utcnow()
+        return sum(1 for day_data in self.get_year_data().get(str(today.month), {}).values() for d in day_data if d['to'] == user_id)
+
+    def get_year_data(self):
+        today = datetime.utcnow()
         
-        empty_data = {'month_income': 0, 'day_limit': 5, 'day_given_to': [], 'total': 0}
+        try:
+            year_data = get_value("plopkoekbot", str(today.year))
+        except KeyError:
+            year_data = {}
 
-        if user_id not in plopkoeks:
-            plopkoeks[user_id] = empty_data
-        if donator not in plopkoeks:
-            plopkoeks[donator] = empty_data
-        plopkoeks[user_id]['month_income'] += 1
-        plopkoeks[donator]['day_limit'] -= 1
+        return year_data
 
-        set_value("plopkoekbot", "plopkoeks", plopkoeks)
+    def get_day_data(self):
+        today = datetime.utcnow()
+        year_data = self.get_year_data()
+        return year_data.get(str(today.month), {}).get(str(today.day), [])
 
-        return plopkoeks[user_id]['month_income']
+    def can_donate(self, donator, receiver):
+        if donator == receiver:
+            return False
+
+        day_data = self.get_day_data()
+        donator_data = [data for data in self.get_day_data() if data['from'] == donator]
+        if len(donator_data) > 5:
+            return False
+        return Counter(data["to"] for data in donator_data)[receiver] <= 4
+
+    def add_plopkoek(self, user_id, donator, message_id):
+        if not self.can_donate(donator=donator, receiver=user_id):
+            return
+        year_data = self.get_year_data()
+        today = datetime.utcnow()
+        
+        if str(today.month) not in year_data:
+            year_data[str(today.month)] = {}
+        if str(today.day) not in year_data[str(today.month)]:
+            year_data[str(today.month)][str(today.day)] = []
+
+        year_data[str(today.month)][str(today.day)].append({
+            'from': donator,
+            'to': user_id,
+            'message_id': message_id,
+        })
+
+        set_value("plopkoekbot", str(today.year), year_data)
+
+        dm = User.create_dm(recipient_id=user_id)
+        content = 'Je hebt een plopkoek van <@{}> gekregen!  Je hebt er nu {} deze maand verzameld.'.format(donator, self.get_income(user_id))
+        Channel.create_message(channel_id=dm.json()['id'], content=content)
+
+    def remove_plopkoek(self, receiver, donator, message_id):
+        year_data = self.get_year_data()
+
+        for month in year_data:
+            for day in year_data[month]:
+                for data in year_data[month][day]:
+                    if data['from'] == donator and data['to'] == receiver and data['message_id'] == message_id:
+
+                        year_data[month][day].remove(data)
+
+        set_value("plopkoekbot", str(datetime.utcnow().year), year_data)
 
     def execute_event(self, event):
         super().execute_event(event)
         if event.of_t('MESSAGE_CREATE'):
             self.donate_plopkoek(event)
+        elif event.of_t('MESSAGE_REACTION_ADD'):
+            self.donate_plopkoek_reaction(event)
+        elif event.of_t('MESSAGE_REACTION_REMOVE'):
+            self.remove_plopkoek_reaction(event)
+        self.logger.critical(event._t)
 
