@@ -42,11 +42,10 @@ class Event:
         self.raw_data = data
 
         try:
-            if data['d'] is not None:
-                for var in data['d']:
-                    setattr(self, var, data['d'][var])
+            for var in data['d']:
+                setattr(self, var, data['d'][var])
         except:
-            get_logger('main').exception("Could not extrapolate data from event. {}".format(data))
+            pass
 
         self.is_dispatch = self.of(GatewayOP.DISPATCH)
 
