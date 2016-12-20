@@ -27,7 +27,7 @@ class PlopkoekBot(Bot):
         if plopkoek_emote in event.content and len(event.content.strip().split(" ")) == 2:
             user = event.content.replace(plopkoek_emote, '').strip()
 
-            self.add_plopkoek(user.strip('<@!>'), donator=event.author['id'], message_id=event.message_id)
+            self.add_plopkoek(user.strip('<@!>'), donator=event.author['id'], message_id=event.id)
                 
     def donate_plopkoek_reaction(self, event):
         if event.emoji['id'] in plopkoek_emote:
