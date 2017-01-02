@@ -6,5 +6,11 @@
         "list": "Show all quotes for a given user.\n\nSyntax: `!quotebot list <user>`",
         "quotees": "Show all users with a quote in the database.\n\n`!quotebot quotees`",
         "random": "Show a random quote from the entire database or from a specific user.\n\nSyntax: `!quotebot random [user]`"
+    },
+    "plopkoekbot": {
+        "__self__": "Provides an appreciation system using plopkoeks as tokens.\n\nOne can give a plopkoek to somebody by means of reacting with a +:plop: or by sending a message with the tagged user and a plopkoek emote.\ni.e.:`@Kruptein :plop:` `:plop: @Kruptein`",
+        "total": "Lists the amount of plopkoeks you or the person specified earned this month\n\nExample: `!plopkoekbot total` `!plopkoekbot total @Kruptein`",
+        "grandtotal": "Lists the amount of plopkoeks you or the person specified earned in total\n\nExample: `!plopkoekbot total` `!plopkoekbot total @Kruptein`",
+        "leaders": "Shows a table with the ranking of most earned plopkoeks this month"
     }
 }
