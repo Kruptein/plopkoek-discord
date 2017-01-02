@@ -6,11 +6,12 @@ import logging
 
 from collections import Counter
 from datetime import datetime
+from tabulate import tabulate
 
 from api import cache
 from api.decorators import command
 from api.gateway import Bot
-from api.utils import get_value, set_value, get_logger
+from api.utils import get_value, set_value, get_logger, get_data
 from api.web import Channel, Webhook, User
 
 general_channel_id = get_value("main", "general_channel_id")
@@ -22,6 +23,32 @@ class PlopkoekBot(Bot):
 
     def __init__(self, stream_log_level=logging.DEBUG, file_log_level=logging.INFO):
         super().__init__("plopkoekbot", stream_log_level=stream_log_level, file_log_level=file_log_level)
+
+    @command('total', fmt='[user_id]')
+    def show_total(self, event, args):
+        user_id = event.author['id']
+        if args.user_id:
+            user_id = args.user_id.strip('<@!>')
+        message = "<@!{}> has so far earned {} plopkoeks this month.".format(user_id, self.get_month_income(user_id))
+        Channel.create_message(event.channel_id, message)
+
+    @command('grandtotal', fmt="[user_id]")
+    def show_grandtotal(self, event, args):
+        user_id = event.author['id']
+        if args.user_id:
+            user_id = args.user_id.strip('<@!>')
+        message = "<@!{}> has so far earned {} plopkoeks in total!.".format(user_id, self.get_total_income(user_id))
+        Channel.create_message(event.channel_id, message)
+
+    @command('leaders')
+    def show_leaders(self, event, args):
+        ranking = self.get_month_ranking()
+        #message = ''
+        #for user, value in ranking.most_common():
+        #    message += "<@!{}>: {}\n".format(user, value)
+        message = tabulate(ranking.most_common(), headers=['user', 'plopkoeks'], tablefmt='fancy_grid')
+        message = '```' + message + '```'
+        Channel.create_message(event.channel_id, message)
 
     def donate_plopkoek(self, event):
         if plopkoek_emote in event.content and len(event.content.strip().split(" ")) == 2:
@@ -49,9 +76,26 @@ class PlopkoekBot(Bot):
 
             self.remove_plopkoek(receiver, donator, event.message_id)
 
-    def get_income(self, user_id):
+    def get_month_income(self, user_id):
         today = datetime.utcnow()
         return sum(1 for day_data in self.get_year_data().get(str(today.month), {}).values() for d in day_data if d['to'] == user_id)
+
+    def get_month_ranking(self):
+        data = self.get_month_data()
+        usernames = []
+        for day in data.values():
+            for d in day:
+                try:
+                    usernames.append(User.get_user(d['to'])['username'])
+                except:
+                    pass
+        # return Counter(User.get_user(d['to'])['username'] for day in data.values() for d in day)
+        return Counter(usernames)
+
+    def get_total_income(self, user_id):
+        data = get_data("plopkoekbot")
+
+        return sum(1 for year_data in data.values() for month_data in year_data.values() for day_data in month_data.values() for d in day_data if d['to'] == user_id)
 
     def get_year_data(self):
         today = datetime.utcnow()
@@ -62,6 +106,11 @@ class PlopkoekBot(Bot):
             year_data = {}
 
         return year_data
+
+    def get_month_data(self):
+        today = datetime.utcnow()
+        year_data = self.get_year_data()
+        return year_data.get(str(today.month), {})
 
     def get_day_data(self):
         today = datetime.utcnow()
@@ -102,13 +151,19 @@ class PlopkoekBot(Bot):
 
         set_value("plopkoekbot", str(today.year), year_data)
 
-        dm = User.create_dm(recipient_id=user_id)
-        content = 'Je hebt een plopkoek van <@{}> gekregen!  Je hebt er nu {} deze maand verzameld.'.format(donator, self.get_income(user_id))
-        Channel.create_message(channel_id=dm.json()['id'], content=content)
+        try:
+            dm = User.create_dm(recipient_id=user_id)
+            content = 'Je hebt een plopkoek van <@{}> gekregen!  Je hebt er nu {} deze maand verzameld.'.format(donator, self.get_month_income(user_id))
+            Channel.create_message(channel_id=dm.json()['id'], content=content)
+        except KeyError:
+            self.logger.critical("Could not send message to plopkoek receiver")
 
-        dm = User.create_dm(recipient_id=donator)
-        content = 'Je hebt een plopkoek aan <@{}> gegeven.  Je kan er vandaag nog {} uitgeven.'.format(user_id, self.get_donations_left(donator))
-        Channel.create_message(channel_id=dm.json()['id'], content=content)
+        try:
+            dm = User.create_dm(recipient_id=donator)
+            content = 'Je hebt een plopkoek aan <@{}> gegeven.  Je kan er vandaag nog {} uitgeven.'.format(user_id, self.get_donations_left(donator))
+            Channel.create_message(channel_id=dm.json()['id'], content=content)
+        except KeyError:
+            self.logger.critical("Could not send message to plopkoek donator")
 
     def remove_plopkoek(self, receiver, donator, message_id):
         year_data = self.get_year_data()
@@ -130,7 +185,7 @@ class PlopkoekBot(Bot):
             set_value("plopkoekbot", str(datetime.utcnow().year), year_data)
 
             dm = User.create_dm(recipient_id=receiver)
-            content = '<@{}> heeft een plopkoek afgepakt :O  Je hebt er nu nog {} deze maand over.'.format(donator, self.get_income(receiver))
+            content = '<@{}> heeft een plopkoek afgepakt :O  Je hebt er nu nog {} deze maand over.'.format(donator, self.get_month_income(receiver))
             Channel.create_message(channel_id=dm.json()['id'], content=content)
 
             dm = User.create_dm(recipient_id=donator)
