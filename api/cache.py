@@ -22,7 +22,10 @@ def get_guilds():
 
 
 def update_user(data):
-    _set("users", dict(get_users(), **{data['id']: data}))
+    try:
+        _set("users", dict(get_users(), **{data['id']: data}))
+    except KeyError:
+        print("Failed to update user data {}".format(data))
 
 
 def update_channel(data):
