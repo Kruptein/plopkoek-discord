@@ -40,15 +40,30 @@ class PlopkoekBot(Bot):
         message = "<@!{}> has so far earned {} plopkoeks in total!.".format(user_id, self.get_total_income(user_id))
         Channel.create_message(event.channel_id, message)
 
-    @command('leaders')
+    @command('leaders', fmt="[month] [year]")
     def show_leaders(self, event, args):
-        ranking = self.get_month_ranking()
+        #ranking = self.get_month_ranking(args.month, args.year, direction="both")
+        received = self.get_month_ranking(args.month, args.year)
+        given = self.get_month_ranking(args.month, args.year, direction="from")
+        data = []
+        for user, val in received.most_common():
+            data.append([val, given[user], user])
         #message = ''
         #for user, value in ranking.most_common():
         #    message += "<@!{}>: {}\n".format(user, value)
+        while data:
+            message = tabulate(data[:10], headers=['received', 'given', 'user'], tablefmt='fancy_grid')
+            message = '```' + message + '```'
+            Channel.create_message(event.channel_id, message)
+            data = data[10:]
+
+    @command('givers', fmt="[month] [year]")
+    def show_givers(self, event, args):
+        ranking = self.get_month_ranking(args.month, args.year, direction="from")
         message = tabulate(ranking.most_common(), headers=['user', 'plopkoeks'], tablefmt='fancy_grid')
         message = '```' + message + '```'
         Channel.create_message(event.channel_id, message)
+
 
     def donate_plopkoek(self, event):
         if plopkoek_emote in event.content and len(event.content.strip().split(" ")) == 2:
@@ -61,7 +76,12 @@ class PlopkoekBot(Bot):
             return
         if event.emoji['id'] in plopkoek_emote:
             message = Channel.get_message(event.channel_id, event.message_id)
-            receiver = message['author']['id']
+            try:
+                receiver = message['author']['id']
+            except KeyError:
+                get_logger("PlopkoekBot").exception("Could not parse message author: {}".format(message))
+                Channel.create_message(event.channel_id, "Something went wrong giving that plopkoek :( spam darragh to fix it")
+                return
             donator = event.user_id
 
             self.add_plopkoek(receiver, donator, event.message_id)
@@ -80,15 +100,18 @@ class PlopkoekBot(Bot):
         today = datetime.utcnow()
         return sum(1 for day_data in self.get_year_data().get(str(today.month), {}).values() for d in day_data if d['to'] == user_id)
 
-    def get_month_ranking(self):
-        data = self.get_month_data()
+    def get_month_ranking(self, month, year, *, direction='to'):
+        if direction == 'both':
+            return self.get_month_ranking(month, year, direction='to') + self.get_month_ranking(month, year, direction='from')
+
+        data = self.get_month_data(month, year)
         usernames = []
         for day in data.values():
             for d in day:
                 try:
-                    usernames.append(User.get_user(d['to'])['username'])
+                    usernames.append(User.get_user(d[direction])['username'])
                 except:
-                    pass
+                    usernames.append(d[direction])
         # return Counter(User.get_user(d['to'])['username'] for day in data.values() for d in day)
         return Counter(usernames)
 
@@ -97,20 +120,22 @@ class PlopkoekBot(Bot):
 
         return sum(1 for year_data in data.values() for month_data in year_data.values() for day_data in month_data.values() for d in day_data if d['to'] == user_id)
 
-    def get_year_data(self):
-        today = datetime.utcnow()
+    def get_year_data(self, year=None):
+        if not year:
+            year = str(datetime.utcnow().year)
         
         try:
-            year_data = get_value("plopkoekbot", str(today.year))
+            year_data = get_value("plopkoekbot", year)
         except KeyError:
             year_data = {}
 
         return year_data
 
-    def get_month_data(self):
-        today = datetime.utcnow()
-        year_data = self.get_year_data()
-        return year_data.get(str(today.month), {})
+    def get_month_data(self, month=None, year=None):
+        if not month:
+            month = str(datetime.utcnow().month)
+        year_data = self.get_year_data(year)
+        return year_data.get(month, {})
 
     def get_day_data(self):
         today = datetime.utcnow()
