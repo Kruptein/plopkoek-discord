@@ -25,6 +25,8 @@ def apply_format(format_string: str, input_str):
                 if '=' in last_group:
                     kwargs_mode = True
                     key, value = last_group.split('=')
+                    if key + ">" in params:
+                        key += ">"
                     if key not in params:
                         raise AttributeError("Unknown key or duplicate key provided {}".format(key))
                     else:
@@ -53,7 +55,8 @@ def apply_format(format_string: str, input_str):
             del value_dict[item]
     # Add the non default optionals as None that are leftover
     for param in params:
-        value_dict[param] = None
+        if param not in value_dict:
+            value_dict[param] = None
 
     return type("FormatDict", (), value_dict)
 
