@@ -8,7 +8,7 @@ import pickle
 import threading
 from enum import IntEnum
 
-from api.db import create_basic_discord_cache
+from api import db
 
 ROOTDIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 API_VERSION = 5
@@ -25,7 +25,7 @@ class ConfigFormat(IntEnum):
 def activate_cache():
     global USE_CACHE
     USE_CACHE = True
-    create_basic_discord_cache()
+    db.create_basic_discord_cache()
 
 
 def get_log_path(name):
@@ -116,3 +116,26 @@ def update_value(name, var, key, value):
     data = get_value(name, var)
     data[key] = value
     set_value(name, var, data)
+
+
+# todo: make channel_id optional, also allow guild_id etc
+def get_userid(username, channel_id):
+    if username.startswith("<@") and username.endswith(">"):
+        return username[2:-1]
+
+    return db.get_userid(username, channel_id)
+
+# def get_userid(quotee):
+#     """
+#     Return the user id of the given quotee.
+#     If quotee is a non formatted string, this function will attempt to lookup the id of the given user.
+#     If quotee is a <@ID> formatted string, this function will simply return that string.
+#     """
+#     if quotee.startswith("<@") and quotee.endswith(">"):
+#         return quotee
+#
+#     users = db.get_user_id()
+#     for user in users:
+#         if users[user]['username'] == quotee:
+#             return "<@" + user + ">"
+#     return quotee

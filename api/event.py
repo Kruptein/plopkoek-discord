@@ -35,6 +35,7 @@ class GatewayOP(IntEnum):
 
 class Event:
     def __init__(self, data):
+        print("EVENT {}:{}".format(data['op'], data['t']))
         self._s = data['s']
         self._t = data['t']
         self._op = data['op']
@@ -67,7 +68,8 @@ class Ready(Event):
         super().__init__(data)
         update_user(self.user)
         for channel in self.private_channels:
-            update_user(channel['recipient'])
+            update_channel(channel)
+        # unavailable guilds aren't interesting, just wait for the GuildCreate events
 
 
 class Resumed(Event):
@@ -76,6 +78,8 @@ class Resumed(Event):
 
 class ChannelCreate(Event):
     def __init__(self, data):
+        print("EVEBNT")
+        print(data)
         super().__init__(data)
         if self.is_private and "id" in self.recipient:
             update_user(self.recipient)
@@ -100,8 +104,6 @@ class GuildCreate(Event):
     def __init__(self, data):
         super().__init__(data)
         update_guild(data['d'])
-        for channel in self.channels:
-            update_channel(channel)
 
 
 class GuildUpdate(Event):

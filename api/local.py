@@ -1,7 +1,7 @@
-from api.db import get_user as db_get_user
+from api import db
 
 
 class User:
     @staticmethod
     def get_user(user_id: int):
-        return db_get_user(user_id)
+        return db.get_user(user_id)

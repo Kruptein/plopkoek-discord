@@ -8,7 +8,6 @@ from collections import Counter
 from datetime import datetime
 from tabulate import tabulate
 
-from api import cache
 from api.decorators import command
 from api.gateway import Bot
 from api.utils import get_value, set_value, get_logger, get_data

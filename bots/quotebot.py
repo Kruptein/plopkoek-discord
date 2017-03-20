@@ -7,10 +7,9 @@ import random
 from collections import Counter
 from datetime import datetime
 
-from api import cache
 from api.decorators import command
 from api.gateway import Bot
-from api.utils import get_value, set_value, get_logger
+from api.utils import get_value, set_value, get_logger, get_userid
 from api.web import Channel, Webhook, User
 
 quote_url = u"https://cdn1.iconfinder.com/data/icons/anchor/128/quote.png"
@@ -42,22 +41,6 @@ def get_username(quotee):
             return User.get_user(quotee[2:-1])['username']
         except KeyError:
             get_logger("QuoteBot").exception("Failed to get username for {}".format(quotee))
-    return quotee
-
-
-def get_userid(quotee):
-    """
-    Return the user id of the given quotee.
-    If quotee is a non formatted string, this function will attempt to lookup the id of the given user.
-    If quotee is a <@ID> formatted string, this function will simply return that string.
-    """
-    if quotee.startswith("<@") and quotee.endswith(">"):
-        return quotee
-
-    users = cache.get_users()
-    for user in users:
-        if users[user]['username'] == quotee:
-            return "<@" + user + ">"
     return quotee
 
 
@@ -98,7 +81,7 @@ class QuoteBot(Bot):
         This is triggered by a `!quotebot add <username> <quote>` command.
         """
         quotes = get_value('quotebot', 'quotes')
-        quote_dict = {'quote': args.quote, 'added_by': event.author['username'], 'added_on': str(datetime.now())}
+        quote_dict = {'quote': args.quote, 'added_by': event.author['id'], 'added_on': str(datetime.now())}
         quotes.setdefault(args.quotee, []).append(quote_dict)
         set_value('quotebot', 'quotes', quotes)
         post_message(channel_id=event.channel_id, content='Quote added!')
@@ -132,7 +115,7 @@ class QuoteBot(Bot):
         This is triggered by a `!quotebot list <username>` command.
         """
         quotes = get_value('quotebot', 'quotes')
-        quotee = get_userid(args.quotee)
+        quotee = get_userid(username=args.quotee, channel_id=event.channel_id)
         if quotee in quotes.keys():
             msg = "{}'s quotes are: ".format(get_username(quotee))
             msg += " | ".join([q['quote'] for q in quotes[quotee]])
