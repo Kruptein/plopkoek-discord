@@ -2,8 +2,7 @@ import sys
 
 from enum import IntEnum
 
-from api import cache
-from api.utils import get_logger
+from api.db import update_user, update_guild, update_channel, remove_guild, remove_channel
 
 
 module = sys.modules[__name__]
@@ -66,9 +65,9 @@ class Event:
 class Ready(Event):
     def __init__(self, data):
         super().__init__(data)
-        cache.update_user(self.user)
+        update_user(self.user)
         for channel in self.private_channels:
-            cache.update_user(channel['recipient'])
+            update_user(channel['recipient'])
 
 
 class Resumed(Event):
@@ -79,46 +78,46 @@ class ChannelCreate(Event):
     def __init__(self, data):
         super().__init__(data)
         if self.is_private and "id" in self.recipient:
-            cache.update_user(self.recipient)
-        cache.update_channel(data['d'])
+            update_user(self.recipient)
+        update_channel(data['d'])
 
 
 class ChannelUpdate(Event):
     def __init__(self, data):
         super().__init__(data)
-        cache.update_channel(data['d'])
+        update_channel(data['d'])
 
 
 class ChannelDelete(Event):
     def __init__(self, data):
         super().__init__(data)
         if self.is_private and "id" in self.recipient:
-            cache.update_user(self.recipient)
-        cache.remove_channel(self.id)
+            update_user(self.recipient)
+        remove_channel(self.id)
 
 
 class GuildCreate(Event):
     def __init__(self, data):
         super().__init__(data)
-        cache.update_guild(data['d'])
+        update_guild(data['d'])
         for channel in self.channels:
-            cache.update_channel(channel)
+            update_channel(channel)
 
 
 class GuildUpdate(Event):
     def __init__(self, data):
         super().__init__(data)
-        cache.update_guild(data['d'])
+        update_guild(data['d'])
 
 
 class GuildDelete(Event):
     def __init__(self, data):
         super().__init__(data)
-        cache.remove_guild(data['d'])
+        remove_guild(data['d'])
 
 
 class MessageCreate(Event):
     def __init__(self, data):
         super().__init__(data)
         if "webhook_id" not in data['d']:
-            cache.update_user(self.author)
+            update_user(self.author)

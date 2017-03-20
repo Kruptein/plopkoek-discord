@@ -1,6 +1,6 @@
 import requests
 
-from api.cache import update_user
+from api.db import update_user
 from api.decorators import cache
 from api.utils import get_value, API_VERSION
 

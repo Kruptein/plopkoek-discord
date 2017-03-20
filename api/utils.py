@@ -8,6 +8,8 @@ import pickle
 import threading
 from enum import IntEnum
 
+from api.db import create_basic_discord_cache
+
 ROOTDIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 API_VERSION = 5
 USE_CACHE = False
@@ -23,6 +25,7 @@ class ConfigFormat(IntEnum):
 def activate_cache():
     global USE_CACHE
     USE_CACHE = True
+    create_basic_discord_cache()
 
 
 def get_log_path(name):
