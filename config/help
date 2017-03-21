@@ -12,5 +12,12 @@
         "total": "Lists the amount of plopkoeks you or the person specified earned this month\n\nExample: `!plopkoekbot total` `!plopkoekbot total @Kruptein`",
         "grandtotal": "Lists the amount of plopkoeks you or the person specified earned in total\n\nExample: `!plopkoekbot total` `!plopkoekbot total @Kruptein`",
         "leaders": "Shows a table with the ranking of most earned plopkoeks this month"
+    },
+    "checklist": {
+        "__self__": "Provides a very basic checklist manager",
+        "additem": "Add an item to the checklist\n\n`!checklist additem pannenkoeken bakken`",
+        "adduser": "Add a user to a particular item.\n\n`!checklist adduser 0 @darragh`",
+        "update": "Update the status of a particular item.\n\n`!checklist update 0 DONE`",
+        "show": "Shows the current state of the checklist"
     }
 }

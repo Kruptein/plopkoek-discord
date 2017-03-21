@@ -148,13 +148,27 @@ class PlopkoekBot(Bot):
         message = "<@!{}> has so far earned {} plopkoeks in total!.".format(user_id, get_total_income(user_id))
         Channel.create_message(event.channel_id, message)
 
-    @command('leaders')
+    @command('leaders', fmt="[month] [year]")
     def show_leaders(self, event, args):
-        ranking = get_month_ranking()
-        # message = ''
-        # for user, value in ranking.most_common():
+        #ranking = self.get_month_ranking(args.month, args.year, direction="both")
+        received = self.get_month_ranking(args.month, args.year)
+        given = self.get_month_ranking(args.month, args.year, direction="from")
+        data = []
+        for user, val in received.most_common():
+            data.append([val, given[user], user])
+        #message = ''
+        #for user, value in ranking.most_common():
         #    message += "<@!{}>: {}\n".format(user, value)
-        message = tabulate(ranking, headers=['user', 'plopkoeks'], tablefmt='fancy_grid')
+        while data:
+            message = tabulate(data[:10], headers=['received', 'given', 'user'], tablefmt='fancy_grid')
+            message = '```' + message + '```'
+            Channel.create_message(event.channel_id, message)
+            data = data[10:]
+
+    @command('givers', fmt="[month] [year]")
+    def show_givers(self, event, args):
+        ranking = self.get_month_ranking(args.month, args.year, direction="from")
+        message = tabulate(ranking.most_common(), headers=['user', 'plopkoeks'], tablefmt='fancy_grid')
         message = '```' + message + '```'
         Channel.create_message(event.channel_id, message)
 
@@ -169,7 +183,12 @@ class PlopkoekBot(Bot):
             return
         if event.emoji['id'] in plopkoek_emote:
             message = Channel.get_message(event.channel_id, event.message_id)
-            receiver = message['author']['id']
+            try:
+                receiver = message['author']['id']
+            except KeyError:
+                get_logger("PlopkoekBot").exception("Could not parse message author: {}".format(message))
+                Channel.create_message(event.channel_id, "Something went wrong giving that plopkoek :( spam darragh to fix it")
+                return
             donator = event.user_id
 
             self.add_plopkoek(receiver, donator, event.message_id)
