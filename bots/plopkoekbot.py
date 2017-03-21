@@ -97,6 +97,8 @@ def can_donate(donator, receiver):
     if donator == receiver:
         return False
 
+
+
     return get_donations_left(donator) > 0
 
 
@@ -211,8 +213,8 @@ class PlopkoekBot(Bot):
     def donate_plopkoek(self, event):
         if plopkoek_emote in event.content and len(event.content.strip().split(" ")) == 2:
             user = event.content.replace(plopkoek_emote, '').strip()
-
-            self.add_plopkoek(user.strip('<@!>'), user_from_id=event.author['id'], message_id=event.id)
+            if user.startswith("<@") and user.endswith(">"):
+                self.add_plopkoek(user.strip('<@!>'), user_from_id=event.author['id'], message_id=event.id)
 
     def donate_plopkoek_reaction(self, event):
         if not event.emoji['id']:
