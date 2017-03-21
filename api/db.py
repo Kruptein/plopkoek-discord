@@ -182,17 +182,23 @@ def remove_channel(data):
     print("Channel remove not yet implemented")
 
 
+# noinspection PyTypeChecker
 def get_userid(username, channel_id):
     conn = get_conn()
     guild_id = conn.execute("SELECT guild_id FROM Channel WHERE channel_id=?", (channel_id,)).fetchone()
+    if not guild_id:
+        return username
     # first get nickname
     user_id = conn.execute("SELECT user_id FROM GuildMember WHERE nick=? AND guild_id=?",
-                           (username, guild_id)).fetchone()
+                           (username, guild_id['guild_id'])).fetchone()
     if user_id:
-        return user_id
+        return user_id['user_id']
 
     # No nickname set, thus look for username
     result = conn.execute("SELECT user_id FROM User WHERE name=? AND user_id IN"
-                          "(SELECT user_id FROM GuildMember WHERE guild_id=?)", (username, guild_id)).fetchone()
+                          "(SELECT user_id FROM GuildMember WHERE guild_id=?)",
+                          (username, guild_id['guild_id'])).fetchone()
     conn.close()
-    return result
+    if not result:
+        return username
+    return result['user_id']
