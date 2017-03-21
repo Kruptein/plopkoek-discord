@@ -107,24 +107,45 @@ def can_donate(donator, receiver):
     # return Counter(data["to"] for data in donator_data)[receiver] <= 4
 
 
-def get_month_ranking():
+def get_month_ranking(month=None, year=None):
+    if not month:
+        month = str(datetime.utcnow().month)
+    if not year:
+        year = str(datetime.utcnow().year)
+    if len(month) == 1:
+        month = '0' + month
+
     conn = db.get_conn()
     received_data = conn.execute("SELECT user_to_id, COUNT(user_to_id) AS received "
                                  "FROM PlopkoekTransfer "
-                                 "WHERE strftime('%m', datetime(dt)) == strftime('%m', 'now') "
-                                 "GROUP BY user_to_id").fetchall()
+                                 "WHERE strftime('%m', datetime(dt)) == ? AND "
+                                 "strftime('%Y', datetime(dt)) == ? "
+                                 "GROUP BY user_to_id",
+                                 (month, year)
+                                 ).fetchall()
 
     donated_data = conn.execute("SELECT user_from_id, COUNT(user_from_id) AS donated "
                                 "FROM PlopkoekTransfer "
-                                "WHERE strftime('%m', datetime(dt)) == strftime('%m', 'now') "
-                                "GROUP BY user_from_id").fetchall()
+                                "WHERE strftime('%m', datetime(dt)) == ? AND "
+                                "strftime('%Y', datetime(dt)) == ? "
+                                "GROUP BY user_from_id",
+                                (month, year)
+                                ).fetchall()
     conn.close()
-    data = {}
+    dict_data = {}
     for row in received_data:
-        data[row['user_to_id']] = {'uid': row['user_to_id'], 'received': row['received']}
+        uid = row['user_to_id']
+        try:
+            username = User.get_user(uid)['username']
+        except KeyError:
+            username = uid
+        dict_data[uid] = {'received': row['received'], 'user': username}
     for row in donated_data:
-        data[row['user_from_id']]['donated'] = row['donated']
-    return sorted(list(data.values()), key=itemgetter('received'), reverse=True)
+        dict_data[row['user_from_id']]['donated'] = row['donated']
+    list_data = []
+    for dict_data in sorted(list(dict_data.values()), key=itemgetter('received'), reverse=True):
+        list_data.append([dict_data['received'], dict_data['donated'], dict_data['user']])
+    return list_data
 
 
 class PlopkoekBot(Bot):
@@ -150,27 +171,14 @@ class PlopkoekBot(Bot):
 
     @command('leaders', fmt="[month] [year]")
     def show_leaders(self, event, args):
-        #ranking = self.get_month_ranking(args.month, args.year, direction="both")
-        received = self.get_month_ranking(args.month, args.year)
-        given = self.get_month_ranking(args.month, args.year, direction="from")
-        data = []
-        for user, val in received.most_common():
-            data.append([val, given[user], user])
-        #message = ''
-        #for user, value in ranking.most_common():
-        #    message += "<@!{}>: {}\n".format(user, value)
+        data = get_month_ranking(args.month, args.year)
+        if not data:
+            Channel.create_message(event.channel_id, "No data for the given period :(")
         while data:
-            message = tabulate(data[:10], headers=['received', 'given', 'user'], tablefmt='fancy_grid')
+            message = tabulate(data[:10], headers=['received', 'donated', 'user'], tablefmt='fancy_grid')
             message = '```' + message + '```'
             Channel.create_message(event.channel_id, message)
             data = data[10:]
-
-    @command('givers', fmt="[month] [year]")
-    def show_givers(self, event, args):
-        ranking = self.get_month_ranking(args.month, args.year, direction="from")
-        message = tabulate(ranking.most_common(), headers=['user', 'plopkoeks'], tablefmt='fancy_grid')
-        message = '```' + message + '```'
-        Channel.create_message(event.channel_id, message)
 
     def donate_plopkoek(self, event):
         if plopkoek_emote in event.content and len(event.content.strip().split(" ")) == 2:
@@ -187,23 +195,12 @@ class PlopkoekBot(Bot):
                 receiver = message['author']['id']
             except KeyError:
                 get_logger("PlopkoekBot").exception("Could not parse message author: {}".format(message))
-                Channel.create_message(event.channel_id, "Something went wrong giving that plopkoek :( spam darragh to fix it")
+                Channel.create_message(event.channel_id,
+                                       "Something went wrong giving that plopkoek :( spam darragh to fix it")
                 return
             donator = event.user_id
 
             self.add_plopkoek(receiver, donator, event.message_id)
-
-    # def get_month_ranking(self):
-    #     data = self.get_month_data()
-    #     usernames = []
-    #     for day in data.values():
-    #         for d in day:
-    #             try:
-    #                 usernames.append(User.get_user(d['to'])['username'])
-    #             except:
-    #                 pass
-    #     # return Counter(User.get_user(d['to'])['username'] for day in data.values() for d in day)
-    #     return Counter(usernames)
 
     def add_plopkoek(self, user_to_id, user_from_id, message_id):
         conn = db.get_conn()

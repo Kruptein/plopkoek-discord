@@ -52,7 +52,7 @@ def update_user(data):
         conn.commit()
     else:
         # noinspection PyTypeChecker
-        if user_data['name'] != name:
+        if user_data['username'] != name:
             conn.execute("UPDATE User SET name=? WHERE user_id=?", (name, snowflake))
             conn.commit()
 
@@ -61,7 +61,7 @@ def update_user(data):
 
 def get_user(user_id):
     conn = get_conn()
-    user_data = conn.execute("SELECT user_id, name FROM User WHERE user_id=?", (user_id,)).fetchone()
+    user_data = conn.execute("SELECT name As username FROM User WHERE user_id=?", (user_id,)).fetchone()
     conn.close()
     if not user_data:
         raise NotCachedException()

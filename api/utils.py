@@ -12,7 +12,7 @@ from api import db
 
 ROOTDIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 API_VERSION = 5
-USE_CACHE = False
+USE_CACHE = True
 
 WRITE_LOCK = threading.Lock()
 
