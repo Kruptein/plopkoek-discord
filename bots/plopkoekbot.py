@@ -200,7 +200,7 @@ class PlopkoekBot(Bot):
             data = data[10:]
 
     @command('grandleaders')
-    def show_leaders(self, event, args):
+    def show_grandleaders(self, event, args):
         data = get_alltime_ranking()
         if not data:
             Channel.create_message(event.channel_id, "No data for the given period :(")
