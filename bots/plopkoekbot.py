@@ -125,6 +125,23 @@ def get_month_ranking(month=None, year=None):
                                 (month, year)
                                 ).fetchall()
     conn.close()
+    return __process_ranking_data(received_data, donated_data)
+
+
+def get_alltime_ranking():
+    conn = db.get_conn()
+    received_data = conn.execute("SELECT user_to_id, COUNT(user_to_id) AS received "
+                                 "FROM PlopkoekTransfer "
+                                 "GROUP BY user_to_id").fetchall()
+
+    donated_data = conn.execute("SELECT user_from_id, COUNT(user_from_id) AS donated "
+                                "FROM PlopkoekTransfer "
+                                "GROUP BY user_from_id").fetchall()
+    conn.close()
+    return __process_ranking_data(received_data, donated_data)
+
+
+def __process_ranking_data(received_data, donated_data):
     dict_data = {}
     for row in received_data:
         uid = row['user_to_id']
@@ -172,6 +189,17 @@ class PlopkoekBot(Bot):
     @command('leaders', fmt="[month] [year]")
     def show_leaders(self, event, args):
         data = get_month_ranking(args.month, args.year)
+        if not data:
+            Channel.create_message(event.channel_id, "No data for the given period :(")
+        while data:
+            message = tabulate(data[:10], headers=['received', 'donated', 'user'], tablefmt='fancy_grid')
+            message = '```' + message + '```'
+            Channel.create_message(event.channel_id, message)
+            data = data[10:]
+
+    @command('grandleaders')
+    def show_leaders(self, event, args):
+        data = get_alltime_ranking()
         if not data:
             Channel.create_message(event.channel_id, "No data for the given period :(")
         while data:
