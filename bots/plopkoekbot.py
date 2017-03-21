@@ -134,7 +134,10 @@ def get_month_ranking(month=None, year=None):
             username = uid
         dict_data[uid] = {'received': row['received'], 'user': username}
     for row in donated_data:
-        dict_data[row['user_from_id']]['donated'] = row['donated']
+        uid = row['user_from_id']
+        if uid not in dict_data:
+            dict_data[uid] = {}
+        dict_data[uid]['donated'] = row['donated']
     list_data = []
     for dict_data in sorted(list(dict_data.values()), key=itemgetter('received'), reverse=True):
         list_data.append([dict_data['received'], dict_data['donated'], dict_data['user']])
