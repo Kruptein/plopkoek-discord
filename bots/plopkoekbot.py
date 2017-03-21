@@ -132,11 +132,15 @@ def get_month_ranking(month=None, year=None):
             username = User.get_user(uid)['username']
         except KeyError:
             username = uid
-        dict_data[uid] = {'received': row['received'], 'user': username}
+        dict_data[uid] = {'received': row['received'], 'user': username, 'donated': 0}
     for row in donated_data:
         uid = row['user_from_id']
         if uid not in dict_data:
-            dict_data[uid] = {}
+            try:
+                username = User.get_user(uid)['username']
+            except KeyError:
+                username = uid
+            dict_data[uid] = {'user': username, 'received': 0}
         dict_data[uid]['donated'] = row['donated']
     list_data = []
     for dict_data in sorted(list(dict_data.values()), key=itemgetter('received'), reverse=True):
