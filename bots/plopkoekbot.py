@@ -4,7 +4,6 @@ Provides a quotebot allowing users to add and traverse quotes.
 
 import logging
 
-from collections import Counter
 from datetime import datetime
 from operator import itemgetter
 
@@ -13,12 +12,12 @@ from tabulate import tabulate
 from api import db
 from api.decorators import command
 from api.gateway import Bot
-from api.utils import get_value, set_value, get_logger, get_data
-from api.web import Channel, Webhook, User
+from api.utils import get_value, get_logger
+from api.web import Channel, User
 
 general_channel_id = get_value("main", "general_channel_id")
-# plopkoek_emote = "<:plop:236155120067411968>"
-plopkoek_emote = "<:lock:259731815651082251>"
+plopkoek_emote = "<:plop:236155120067411968>"
+# plopkoek_emote = "<:lock:259731815651082251>"
 
 
 def init_db():
@@ -100,12 +99,6 @@ def can_donate(donator, receiver):
 
     return get_donations_left(donator) > 0
 
-    # day_data = self.get_day_data()
-    # donator_data = [data for data in self.get_day_data() if data['from'] == donator]
-    # if len(donator_data) > 5:
-    #    return False
-    # return Counter(data["to"] for data in donator_data)[receiver] <= 4
-
 
 def get_month_ranking(month=None, year=None):
     if not month:
@@ -150,7 +143,7 @@ def get_month_ranking(month=None, year=None):
 
 class PlopkoekBot(Bot):
     def __init__(self, stream_log_level=logging.DEBUG, file_log_level=logging.INFO):
-        super().__init__("pkoekbot", stream_log_level=stream_log_level, file_log_level=file_log_level)
+        super().__init__("plopkoekbot", stream_log_level=stream_log_level, file_log_level=file_log_level)
         init_db()
 
     @command('total', fmt='[user_id]')
@@ -203,6 +196,9 @@ class PlopkoekBot(Bot):
             self.add_plopkoek(receiver, donator, event.message_id)
 
     def add_plopkoek(self, user_to_id, user_from_id, message_id):
+        if not can_donate(user_from_id, user_to_id):
+            return
+
         conn = db.get_conn()
         conn.execute("INSERT INTO PlopkoekTransfer(user_from_id, user_to_id, message_id, dt) VALUES (?, ?, ?, ?)",
                      (user_to_id, user_from_id, message_id, datetime.now()))
