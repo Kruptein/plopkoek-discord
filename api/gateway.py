@@ -112,13 +112,12 @@ class RtmHandler:
         """
         Read data from the websocket.
         """
-        data = []
         while True:
             try:
                 event = json.loads(self.__socket.recv())
-                data.append(get_event(event))
+                yield get_event(event)
             except websocket.WebSocketTimeoutException:
-                return data
+                return
 
     def run(self, threaded=True):
         """
@@ -144,7 +143,12 @@ class RtmHandler:
             try:
                 if (datetime.now() - self.heartbeat_last).total_seconds() >= self.heartbeat_interval / 1000:
                     self.__socket.send(json.dumps({'op': 1, 'd': self.last_seq}))
-                event_list = self.__read_socket()
+                for event in self.__read_socket():
+                    if event.is_dispatch:
+                        self.last_seq = event.sequence
+                        parent.execute_event(event)
+                    elif event.of(GatewayOP.HEARTBEAT_ACK):
+                        self.heartbeat_last = datetime.now()
             except (TimeoutError, websocket.WebSocketConnectionClosedException, websocket.WebSocketTimeoutException,
                     ConnectionResetError):
                 parent.logger.warning('Run timed out, restarting in 60 seconds.')
@@ -153,14 +157,6 @@ class RtmHandler:
                 return
             except ValueError as e:
                 parent.logger.warning(e)
-            else:
-                for event in event_list:
-                    if event.is_dispatch:
-                        self.last_seq = event.sequence
-                        parent.execute_event(event)
-                    elif event.of(GatewayOP.HEARTBEAT_ACK):
-                        self.heartbeat_last = datetime.now()
-                time.sleep(1)
 
     def start_bot(self, bot: 'Bot'):
         self.bots.append(bot)
@@ -171,8 +167,7 @@ class RtmHandler:
         The given event is a dictionary containing the data of the specific event.
         Overwrite this method if you want to act on an event.
         """
-        self.logger.info(event)
-        self.logger.debug("\t{}".format(event.raw_data))
+        self.logger.info("executing: " + event._t)
         for bot in self.bots:
             bot.execute_event(event)
 
