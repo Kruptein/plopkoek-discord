@@ -2,8 +2,10 @@ import sys
 
 from enum import IntEnum
 
-from api.db import update_user, update_guild, update_channel, remove_guild, remove_channel
+import logging
 
+from api.db import update_user, update_guild, update_channel, remove_guild, remove_channel
+from api.utils import get_logger
 
 module = sys.modules[__name__]
 
@@ -35,7 +37,6 @@ class GatewayOP(IntEnum):
 
 class Event:
     def __init__(self, data):
-        print("EVENT {}:{}".format(data['op'], data['t']))
         self._s = data['s']
         self._t = data['t']
         self._op = data['op']
@@ -78,8 +79,6 @@ class Resumed(Event):
 
 class ChannelCreate(Event):
     def __init__(self, data):
-        print("EVEBNT")
-        print(data)
         super().__init__(data)
         if self.is_private and "id" in self.recipient:
             update_user(self.recipient)
