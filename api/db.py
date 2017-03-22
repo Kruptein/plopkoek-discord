@@ -12,7 +12,7 @@ def get_conn():
 def create_basic_discord_cache():
     conn = get_conn()
     # User table
-    conn.execute("CREATE TABLE IF NOT EXISTS User(user_id TEXT(64) PRIMARY KEY UNIQUE NOT NULL, name TEXT NOT NULL);")
+    conn.execute("CREATE TABLE IF NOT EXISTS User(user_id TEXT(64) PRIMARY KEY UNIQUE NOT NULL, name TEXT NOT NULL, avatar TEXT);")
     # Guild table
     conn.execute("CREATE TABLE IF NOT EXISTS Guild(guild_id TEXT(64) PRIMARY KEY UNIQUE NOT NULL, name TEXT NOT NULL);")
     # Channel table
@@ -43,17 +43,18 @@ def create_basic_discord_cache():
 def update_user(data):
     snowflake = data['id']
     name = data['username']
+    avatar = data['avatar']
 
     conn = get_conn()
     try:
         user_data = get_user(snowflake)
     except NotCachedException:
-        conn.execute("INSERT INTO User (user_id, name) VALUES (?, ?)", (snowflake, name))
+        conn.execute("INSERT INTO User (user_id, name, avatar) VALUES (?, ?, ?)", (snowflake, name, avatar))
         conn.commit()
     else:
         # noinspection PyTypeChecker
-        if user_data['username'] != name:
-            conn.execute("UPDATE User SET name=? WHERE user_id=?", (name, snowflake))
+        if user_data['username'] != name or user_data['avatar'] != avatar:
+            conn.execute("UPDATE User SET name=?, avatar=? WHERE user_id=?", (name, avatar, snowflake))
             conn.commit()
 
     conn.close()
@@ -61,7 +62,7 @@ def update_user(data):
 
 def get_user(user_id):
     conn = get_conn()
-    user_data = conn.execute("SELECT name As username FROM User WHERE user_id=?", (user_id,)).fetchone()
+    user_data = conn.execute("SELECT name As username, avatar FROM User WHERE user_id=?", (user_id,)).fetchone()
     conn.close()
     if not user_data:
         raise NotCachedException()
