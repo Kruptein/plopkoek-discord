@@ -63,7 +63,7 @@ def remove_plopkoek(user_to_id, user_from_id, message_id):
     conn = db.get_conn()
     count = conn.execute("SELECT COUNT(*) AS count FROM PlopkoekTransfer "
                          "WHERE user_to_id==? AND user_from_id==? AND message_id=?",
-                         user_to_id, user_from_id, message_id).fetchone()['count']
+                         (user_to_id, user_from_id, message_id)).fetchone()['count']
     if count > 0:
         conn.execute("DELETE FROM PlopkoekTransfer "
                      "WHERE user_to_id==? AND user_from_id==? AND message_id=?",
@@ -238,7 +238,7 @@ class PlopkoekBot(Bot):
 
         conn = db.get_conn()
         conn.execute("INSERT INTO PlopkoekTransfer(user_from_id, user_to_id, message_id, dt) VALUES (?, ?, ?, ?)",
-                     (user_to_id, user_from_id, message_id, datetime.now()))
+                     (user_from_id, user_to_id, message_id, datetime.now()))
         conn.commit()
         conn.close()
 
