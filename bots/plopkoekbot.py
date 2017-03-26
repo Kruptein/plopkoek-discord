@@ -56,7 +56,10 @@ def get_total_income(user_id):
 
 
 def get_donations_left(user_id):
-    return 5 - get_income(user_id, '%d')
+    conn = db.get_conn()
+    count = conn.execute("SELECT COUNT(*) As count FROM PlopkoekTransfer WHERE date(dt) == date('now') AND user_from_id==?;", (user_id,)).fetchone()
+    conn.close()
+    return 5 - count['count']
 
 
 def remove_plopkoek(user_to_id, user_from_id, message_id):
