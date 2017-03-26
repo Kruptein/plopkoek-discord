@@ -41,9 +41,14 @@ def create_basic_discord_cache():
 
 
 def update_user(data):
-    snowflake = data['id']
-    name = data['username']
-    avatar = data['avatar']
+    try:
+        snowflake = data['id']
+        name = data['username']
+        avatar = data['avatar']
+    except Exception as e:
+        print(data)
+        print(e)
+        return
 
     conn = get_conn()
     try:
@@ -62,7 +67,7 @@ def update_user(data):
 
 def get_user(user_id):
     conn = get_conn()
-    user_data = conn.execute("SELECT name As username, avatar FROM User WHERE user_id=?", (user_id,)).fetchone()
+    user_data = conn.execute("SELECT user_id As id, name As username, avatar FROM User WHERE user_id=?", (user_id,)).fetchone()
     conn.close()
     if not user_data:
         raise NotCachedException()
