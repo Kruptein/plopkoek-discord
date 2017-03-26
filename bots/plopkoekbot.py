@@ -67,7 +67,7 @@ def remove_plopkoek(user_to_id, user_from_id, message_id):
     if count > 0:
         conn.execute("DELETE FROM PlopkoekTransfer "
                      "WHERE user_to_id==? AND user_from_id==? AND message_id=?",
-                     user_to_id, user_from_id, message_id)
+                     (user_to_id, user_from_id, message_id))
         conn.commit()
 
         dm = User.create_dm(recipient_id=user_to_id)
