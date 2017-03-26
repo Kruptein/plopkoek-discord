@@ -120,16 +120,18 @@ def update_guild(data):
             conn.commit()
     conn.close()
 
-    for channel in data['channels']:
-        # This is missing during the GuildCreate event..
-        if 'guild_id' not in channel:
-            channel['guild_id'] = snowflake
-        update_channel(channel)
+    if 'channels' in data:
+        for channel in data['channels']:
+            # This is missing during the GuildCreate event..
+            if 'guild_id' not in channel:
+                channel['guild_id'] = snowflake
+            update_channel(channel)
 
-    for member in data['members']:
-        if 'guild_id' not in member:
-            member['guild_id'] = snowflake
-        update_member(member)
+    if 'members' in data:
+        for member in data['members']:
+            if 'guild_id' not in member:
+                member['guild_id'] = snowflake
+            update_member(member)
 
 
 def get_guild(guild_id):
