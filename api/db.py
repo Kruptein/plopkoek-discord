@@ -41,9 +41,14 @@ def create_basic_discord_cache():
 
 
 def update_user(data):
-    snowflake = data['id']
-    name = data['username']
-    avatar = data['avatar']
+    try:
+        snowflake = data['id']
+        name = data['username']
+        avatar = data['avatar']
+    except Exception as e:
+        print(data)
+        print(e)
+        return
 
     conn = get_conn()
     try:
@@ -62,7 +67,7 @@ def update_user(data):
 
 def get_user(user_id):
     conn = get_conn()
-    user_data = conn.execute("SELECT name As username, avatar FROM User WHERE user_id=?", (user_id,)).fetchone()
+    user_data = conn.execute("SELECT user_id As id, name As username, avatar FROM User WHERE user_id=?", (user_id,)).fetchone()
     conn.close()
     if not user_data:
         raise NotCachedException()
@@ -115,16 +120,18 @@ def update_guild(data):
             conn.commit()
     conn.close()
 
-    for channel in data['channels']:
-        # This is missing during the GuildCreate event..
-        if 'guild_id' not in channel:
-            channel['guild_id'] = snowflake
-        update_channel(channel)
+    if 'channels' in data:
+        for channel in data['channels']:
+            # This is missing during the GuildCreate event..
+            if 'guild_id' not in channel:
+                channel['guild_id'] = snowflake
+            update_channel(channel)
 
-    for member in data['members']:
-        if 'guild_id' not in member:
-            member['guild_id'] = snowflake
-        update_member(member)
+    if 'members' in data:
+        for member in data['members']:
+            if 'guild_id' not in member:
+                member['guild_id'] = snowflake
+            update_member(member)
 
 
 def get_guild(guild_id):

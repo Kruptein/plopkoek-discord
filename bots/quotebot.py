@@ -55,7 +55,7 @@ def post_quote(channel_id, quote, quotee):
     if channel_id == general_channel_id:
         avatar_url = quote_url
         if quotee.startswith("<@") and quotee.endswith(">"):
-            user = User.get_user(quotee[2:-1])
+            user = User.get_user(quotee.strip("<@!>"))
             avatar_url = User.get_avatar_url(user)
             quotee = user['username']
         Webhook.execute_content(webhook_id, webhook_token, quote, quotee, avatar_url=avatar_url)
@@ -115,7 +115,7 @@ class QuoteBot(Bot):
         This is triggered by a `!quotebot list <username>` command.
         """
         quotes = get_value('quotebot', 'quotes')
-        quotee = get_userid(username=args.quotee, channel_id=event.channel_id)
+        quotee = "<@{}>".format(get_userid(username=args.quotee, channel_id=event.channel_id))
         if quotee in quotes.keys():
             msg = "{}'s quotes are: ".format(get_username(quotee))
             msg += " | ".join([q['quote'] for q in quotes[quotee]])
