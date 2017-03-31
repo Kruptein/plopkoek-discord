@@ -124,15 +124,15 @@ class RtmHandler:
         Start the connection and begin receiving events from the socket.
         If `threaded` is True, this method will be run in a seperate thread.
         """
-        self.logger.info("Started running")
         if threaded:
-            self.run_thread = threading.Thread(target=self.__run, args=(self, threaded), daemon=True)
+            self.run_thread = threading.Thread(target=self.run, args=(self, False), daemon=True)
             self.run_thread.start()
         else:
-            self.__run(self, threaded)
-        self.logger.info("Stopped running")
+            self.logger.info("Started running")
+            while True:
+                self.__run(self)
 
-    def __run(self, parent, threaded):
+    def __run(self, parent):
         """
         Start the connection and begin receiving events from the socket.
         THIS METHOD SHOULD BE INVOKED BY ``run`` IF YOU WANT TO RUN THIS THREADED.
@@ -141,7 +141,7 @@ class RtmHandler:
         self.__init_websocket()
         while True:
             try:
-                if (datetime.now() - self.heartbeat_last).total_seconds() >= self.heartbeat_interval / 1000:
+                if (datetime.now() - self.heartbeat_last).total_seconds() >= self.heartbeat_interval // 1000:
                     self.__socket.send(json.dumps({'op': 1, 'd': self.last_seq}))
                 for event in self.__read_socket():
                     if event.is_dispatch:
@@ -153,7 +153,6 @@ class RtmHandler:
                     ConnectionResetError):
                 parent.logger.warning('Run timed out, restarting in 60 seconds.')
                 time.sleep(60)
-                parent.run(threaded)
                 return
             except ValueError as e:
                 parent.logger.warning(e)
