@@ -211,6 +211,11 @@ class Bot(metaclass=CommandRegisterType):
         sh.setFormatter(formatter)
         self.logger.addHandler(sh)
 
+    def has_command(self, command):
+        if self.__class__.__qualname__ in Bot.command_register:
+            return command in Bot.command_register[self.__class__.__qualname__]
+        return False
+
     def is_bot_command(self, event):
         """
         Returns true if the given string is a command for this specific bot.
@@ -248,7 +253,7 @@ class Bot(metaclass=CommandRegisterType):
         The command will contain the command string or will ne None if no further command was given.
         """
         def start_command(command):
-            cmd, fmt = Bot.command_register[command]
+            cmd, fmt = Bot.command_register[self.__class__.__qualname__][command]
             try:
                 prefix = len(self.botname) + 2  # bot token + botname + space
                 if command != '*':
@@ -266,9 +271,9 @@ class Bot(metaclass=CommandRegisterType):
             else:
                 help_command = commands[1]
             self.show_help(event.channel_id, help_command)
-        elif commands[0] in Bot.command_register:
+        elif self.has_command(commands[0]):
             start_command(commands[0])
-        elif '*' in Bot.command_register:
+        elif self.has_command('*'):
             start_command('*')
 
     def show_help(self, channel_id, command='__self__'):
