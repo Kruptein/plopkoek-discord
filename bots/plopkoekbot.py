@@ -14,6 +14,7 @@ from api.decorators import command
 from api.gateway import Bot
 from api.utils import get_value, get_logger
 from api.web import Channel, User
+from plots import plotly_chord
 
 general_channel_id = get_value("main", "general_channel_id")
 plopkoek_emote = "<:plop:236155120067411968>"
@@ -260,6 +261,8 @@ class PlopkoekBot(Bot):
             Channel.create_message(channel_id=dm.json()['id'], content=content)
         except KeyError:
             self.logger.critical("Could not send message to plopkoek donator")
+
+    plotly_chord.p()
 
     def execute_event(self, event):
         super().execute_event(event)
