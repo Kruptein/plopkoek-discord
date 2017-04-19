@@ -3,7 +3,6 @@ Provides a quotebot allowing users to add and traverse quotes.
 """
 
 import logging
-
 from datetime import datetime
 from operator import itemgetter
 
@@ -17,8 +16,8 @@ from api.web import Channel, User
 from plots import plotly_chord
 
 general_channel_id = get_value("main", "general_channel_id")
-plopkoek_emote = "<:plop:236155120067411968>"
-# plopkoek_emote = "<:lock:259731815651082251>"
+# plopkoek_emote = "<:plop:236155120067411968>"
+plopkoek_emote = "<:lock:259731815651082251>"
 
 
 def init_db():
@@ -58,7 +57,9 @@ def get_total_income(user_id):
 
 def get_donations_left(user_id):
     conn = db.get_conn()
-    count = conn.execute("SELECT COUNT(*) As count FROM PlopkoekTransfer WHERE date(dt) == date('now') AND user_from_id==?;", (user_id,)).fetchone()
+    count = conn.execute(
+        "SELECT COUNT(*) As count FROM PlopkoekTransfer WHERE date(dt) == date('now') AND user_from_id==?;",
+        (user_id,)).fetchone()
     conn.close()
     return 5 - count['count']
 
@@ -98,10 +99,8 @@ def remove_plopkoek_reaction(event):
 
 
 def can_donate(donator, receiver):
-    if donator == receiver:
-        return False
-
-
+    # if donator == receiver:
+    #     return False
 
     return get_donations_left(donator) > 0
 
@@ -240,17 +239,31 @@ class PlopkoekBot(Bot):
         if not can_donate(user_from_id, user_to_id):
             return
 
+        now = datetime.now()
+
         conn = db.get_conn()
         conn.execute("INSERT INTO PlopkoekTransfer(user_from_id, user_to_id, message_id, dt) VALUES (?, ?, ?, ?)",
-                     (user_from_id, user_to_id, message_id, datetime.now()))
+                     (user_from_id, user_to_id, message_id, now))
         conn.commit()
         conn.close()
+
+        try:
+            embed = {
+                "description": "Darragh is de beste! *work in progress*",
+                "author": {
+                    "name": "<@{}>".format(user_to_id),
+                    "icon_url": User.get_avatar_url(User.get_user(user_to_id))
+                }
+            }
+        except Exception as e:
+            self.logger.exception(e)
+            embed = {}
 
         try:
             dm = User.create_dm(recipient_id=user_to_id)
             content = 'Je hebt een plopkoek van <@{}> gekregen!  Je hebt er nu {} deze maand verzameld.'.format(
                 user_from_id, get_income(user_to_id, '%m'))
-            Channel.create_message(channel_id=dm.json()['id'], content=content)
+            Channel.create_message(channel_id=dm.json()['id'], content=content, embed=embed)
         except KeyError:
             self.logger.critical("Could not send message to plopkoek receiver")
 
@@ -258,11 +271,11 @@ class PlopkoekBot(Bot):
             dm = User.create_dm(recipient_id=user_from_id)
             content = 'Je hebt een plopkoek aan <@{}> gegeven.  Je kan er vandaag nog {} uitgeven.' \
                 .format(user_to_id, get_donations_left(user_from_id))
-            Channel.create_message(channel_id=dm.json()['id'], content=content)
+            ret = Channel.create_message(channel_id=dm.json()['id'], content=content, embed=embed)
         except KeyError:
             self.logger.critical("Could not send message to plopkoek donator")
 
-    plotly_chord.p()
+    # plotly_chord.p()
 
     def execute_event(self, event):
         super().execute_event(event)

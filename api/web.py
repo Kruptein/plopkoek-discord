@@ -37,8 +37,10 @@ class Guild:
 
 class Channel:
     @staticmethod
-    def create_message(channel_id: int, content: str):
-        return post("/channels/{}/messages".format(channel_id), {'content': content})
+    def create_message(channel_id: int, content: str, embed=None):
+        if not embed:
+            embed = {}
+        return post("/channels/{}/messages".format(channel_id), {'content': content, 'embed': embed})
 
     @staticmethod
     def get_message(channel_id: int, message_id: int):
