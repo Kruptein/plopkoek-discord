@@ -16,8 +16,8 @@ from api.web import Channel, User
 from plots import plotly_chord
 
 general_channel_id = get_value("main", "general_channel_id")
-# plopkoek_emote = "<:plop:236155120067411968>"
-plopkoek_emote = "<:lock:259731815651082251>"
+plopkoek_emote = "<:plop:236155120067411968>"
+# plopkoek_emote = "<:lock:259731815651082251>"
 
 
 def init_db():
@@ -29,6 +29,7 @@ def init_db():
     conn.execute("CREATE TABLE IF NOT EXISTS PlopkoekTransfer("
                  "user_from_id TEXT(64) NOT NULL,"
                  "user_to_id TEXT(64) NOT NULL,"
+                 "channel_id TEXT(64) NOT NULL,"
                  "message_id TEXT(64) NOT NULL,"
                  "dt TIMESTAMP NOT NULL,"
                  "FOREIGN KEY(user_from_id) REFERENCES User(user_id),"
@@ -64,15 +65,15 @@ def get_donations_left(user_id):
     return 5 - count['count']
 
 
-def remove_plopkoek(user_to_id, user_from_id, message_id):
+def remove_plopkoek(user_to_id, user_from_id, channel_id, message_id):
     conn = db.get_conn()
     count = conn.execute("SELECT COUNT(*) AS count FROM PlopkoekTransfer "
-                         "WHERE user_to_id==? AND user_from_id==? AND message_id=?",
-                         (user_to_id, user_from_id, message_id)).fetchone()['count']
+                         "WHERE user_to_id==? AND user_from_id==? AND channel_id=? AND message_id=?",
+                         (user_to_id, user_from_id, channel_id, message_id)).fetchone()['count']
     if count > 0:
         conn.execute("DELETE FROM PlopkoekTransfer "
-                     "WHERE user_to_id==? AND user_from_id==? AND message_id=?",
-                     (user_to_id, user_from_id, message_id))
+                     "WHERE user_to_id==? AND user_from_id==? AND channel_id=? AND message_id=?",
+                     (user_to_id, user_from_id, channel_id, message_id))
         conn.commit()
 
         dm = User.create_dm(recipient_id=user_to_id)
@@ -95,12 +96,12 @@ def remove_plopkoek_reaction(event):
         receiver = message['author']['id']
         donator = event.user_id
 
-        remove_plopkoek(receiver, donator, event.message_id)
+        remove_plopkoek(receiver, donator, event.channel_id, event.message_id)
 
 
 def can_donate(donator, receiver):
-    # if donator == receiver:
-    #     return False
+    if donator == receiver:
+        return False
 
     return get_donations_left(donator) > 0
 
@@ -217,7 +218,7 @@ class PlopkoekBot(Bot):
         if plopkoek_emote in event.content and len(event.content.strip().split(" ")) == 2:
             user = event.content.replace(plopkoek_emote, '').strip()
             if user.startswith("<@") and user.endswith(">"):
-                self.add_plopkoek(user.strip('<@!>'), user_from_id=event.author['id'], message_id=event.id)
+                self.add_plopkoek(user.strip('<@!>'), user_from_id=event.author['id'], channel_id=event.channel_id, message_id=event.id)
 
     def donate_plopkoek_reaction(self, event):
         if not event.emoji['id']:
@@ -233,26 +234,28 @@ class PlopkoekBot(Bot):
                 return
             donator = event.user_id
 
-            self.add_plopkoek(receiver, donator, event.message_id)
+            self.add_plopkoek(receiver, donator, event.channel_id, event.message_id)
 
-    def add_plopkoek(self, user_to_id, user_from_id, message_id):
+    def add_plopkoek(self, user_to_id, user_from_id, channel_id, message_id):
         if not can_donate(user_from_id, user_to_id):
             return
 
         now = datetime.now()
 
         conn = db.get_conn()
-        conn.execute("INSERT INTO PlopkoekTransfer(user_from_id, user_to_id, message_id, dt) VALUES (?, ?, ?, ?)",
-                     (user_from_id, user_to_id, message_id, now))
+        conn.execute("INSERT INTO PlopkoekTransfer(user_from_id, user_to_id, channel_id, message_id, dt) VALUES (?, ?, ?, ?, ?)",
+                     (user_from_id, user_to_id, channel_id, message_id, now))
         conn.commit()
         conn.close()
 
         try:
+            message = Channel.get_message(channel_id, message_id)
+            user = User.get_user(user_to_id)
             embed = {
-                "description": "Darragh is de beste! *work in progress*",
+                "description": message['content'],
                 "author": {
-                    "name": "<@{}>".format(user_to_id),
-                    "icon_url": User.get_avatar_url(User.get_user(user_to_id))
+                    "name": user['username'],
+                    "icon_url": User.get_avatar_url(user)
                 }
             }
         except Exception as e:
@@ -271,7 +274,7 @@ class PlopkoekBot(Bot):
             dm = User.create_dm(recipient_id=user_from_id)
             content = 'Je hebt een plopkoek aan <@{}> gegeven.  Je kan er vandaag nog {} uitgeven.' \
                 .format(user_to_id, get_donations_left(user_from_id))
-            ret = Channel.create_message(channel_id=dm.json()['id'], content=content, embed=embed)
+            Channel.create_message(channel_id=dm.json()['id'], content=content, embed=embed)
         except KeyError:
             self.logger.critical("Could not send message to plopkoek donator")
 
