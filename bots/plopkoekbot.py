@@ -62,7 +62,7 @@ def get_donations_left(user_id):
         "SELECT COUNT(*) As count FROM PlopkoekTransfer WHERE date(dt) == date('now') AND user_from_id==?;",
         (user_id,)).fetchone()
     conn.close()
-    return 5 - count['count']
+    return 4 - count['count']
 
 
 def remove_plopkoek(user_to_id, user_from_id, channel_id, message_id):
