@@ -5,7 +5,7 @@ from enum import IntEnum
 import logging
 
 from api.db import update_user, update_guild, update_channel, remove_guild, remove_channel
-from api.utils import get_logger
+from api.utils import get_logger, set_value
 
 module = sys.modules[__name__]
 
@@ -50,6 +50,8 @@ class Event:
 
         self.is_dispatch = self.of(GatewayOP.DISPATCH)
 
+        set_value("main", "last_sequence_id", data['s'] if data['s'] is not None else '0')
+
     @property
     def sequence(self):
         return self._s
@@ -71,6 +73,7 @@ class Ready(Event):
         for channel in self.private_channels:
             update_channel(channel)
         # unavailable guilds aren't interesting, just wait for the GuildCreate events
+        set_value("main", "last_session_id", self.session_id)
 
 
 class Resumed(Event):
@@ -80,8 +83,9 @@ class Resumed(Event):
 class ChannelCreate(Event):
     def __init__(self, data):
         super().__init__(data)
-        if self.is_private and "id" in self.recipient:
-            update_user(self.recipient)
+        # TODO FIX
+        #if self.is_private and "id" in self.recipient:
+        #    update_user(self.recipient)
         update_channel(data['d'])
 
 

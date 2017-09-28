@@ -74,7 +74,7 @@ class RtmHandler:
         self.logger.debug("Initializing websocket")
         url = Gateway.get_url()
         ws = websocket.create_connection("{}/?v={}&encoding=json".format(url, API_VERSION))
-        ws.sock.settimeout(2)
+        ws.sock.settimeout(3)
 
         hello = json.loads(ws.recv())
         if hello['op'] == 10:
@@ -82,7 +82,56 @@ class RtmHandler:
         else:
             raise Exception("Did not receive hello? Got: {}".format(hello))
 
-        # Send Identify message
+        # first try resuming
+        self.__send_resume(ws)
+        ready = json.loads(ws.recv())
+        #if ready['op'] == 0 and ready['t'] == 'READY':
+        #    self.logger.critical("Resuming..")
+        #    get_event(ready)
+        if ready['op'] == 9 and not ready['d']:
+            self.logger.critical("Failed to resume, starting up blank")
+            # if resuming failed identify
+            self.__send_identify(ws)
+
+            ready = json.loads(ws.recv())
+            if ready['op'] == 0 and ready['t'] == 'READY':
+                get_event(ready)  # Parse the ready event
+            else:
+                raise Exception("Did not receive ready? Got: {}".format(hello))
+        else:
+            self.logger.critical("Resuming..")
+            self.logger.critical(ready)
+        #else:
+        #    self.logger.critical("Failed to resume.")
+        #    self.logger.critical(ready)
+        #    raise Exception("RIP")
+
+        self.__socket = ws
+        self.logger.debug("Initialized websocket")
+
+    def __read_socket(self):
+        """
+        Read data from the websocket.
+        """
+        while True:
+            try:
+                event = json.loads(self.__socket.recv())
+                self.logger.critical("OP:{} T:{}".format(event['op'], event['t']))
+                yield get_event(event)
+            except websocket.WebSocketTimeoutException:
+                return
+
+    def __send_resume(self, ws):
+        ws.send(json.dumps({
+            'op': 6,
+            'd': {
+                'token': get_value("main", "discord-token"),
+                'session_id': get_value("main", "last_session_id"),
+                'seq': get_value("main", "last_sequence_id")
+            }
+        }))
+
+    def __send_identify(self, ws):
         ws.send(json.dumps({
             'op': 2,
             'd': {
@@ -99,25 +148,6 @@ class RtmHandler:
                 'shard': [0, 1]
             }
         }))
-        ready = json.loads(ws.recv())
-        if ready['op'] == 0 and ready['t'] == 'READY':
-            get_event(ready)  # Parse the ready event
-        else:
-            raise Exception("Did not receive ready? Got: {}".format(hello))
-
-        self.__socket = ws
-        self.logger.debug("Initialized websocket")
-
-    def __read_socket(self):
-        """
-        Read data from the websocket.
-        """
-        while True:
-            try:
-                event = json.loads(self.__socket.recv())
-                yield get_event(event)
-            except websocket.WebSocketTimeoutException:
-                return
 
     def run(self, threaded=True):
         """
@@ -141,6 +171,7 @@ class RtmHandler:
         self.__init_websocket()
         while True:
             try:
+                #self.logger.critical(self.__socket)
                 if (datetime.now() - self.heartbeat_last).total_seconds() >= self.heartbeat_interval // 1000:
                     self.__socket.send(json.dumps({'op': 1, 'd': self.last_seq}))
                 for event in self.__read_socket():
@@ -150,9 +181,10 @@ class RtmHandler:
                     elif event.of(GatewayOP.HEARTBEAT_ACK):
                         self.heartbeat_last = datetime.now()
             except (TimeoutError, websocket.WebSocketConnectionClosedException, websocket.WebSocketTimeoutException,
-                    ConnectionResetError):
-                parent.logger.warning('Run timed out, restarting in 60 seconds.')
-                time.sleep(60)
+                    ConnectionResetError) as e:
+                parent.logger.warning('Run timed out, restarting in 10 seconds.')
+                parent.logger.error(e)
+                time.sleep(10)
                 return
             except ValueError as e:
                 parent.logger.warning(e)

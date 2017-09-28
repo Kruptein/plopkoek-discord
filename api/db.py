@@ -149,7 +149,7 @@ def remove_guild(data):
 
 def update_channel(data):
     snowflake = data['id']
-    is_private = data['is_private']
+    is_private = False  # data['is_private']
     type_ = data['type']
     guild_id = None
     user_id = None

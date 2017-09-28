@@ -288,4 +288,4 @@ class PlopkoekBot(Bot):
             self.donate_plopkoek_reaction(event)
         elif event.of_t('MESSAGE_REACTION_REMOVE'):
             remove_plopkoek_reaction(event)
-        self.logger.critical(event._t)
+        # self.logger.critical(event._t)
