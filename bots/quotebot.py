@@ -178,10 +178,13 @@ class QuoteBot(Bot):
             " ".join("{}({})".format(get_username(quotee), num) for quotee, num in counter.most_common(3))))
 
     def execute_event(self, event):
+        """
+        Display a "random" quote every 31 messages
+        """
         super().execute_event(event)
         if event.of_t("MESSAGE_CREATE"):
             self.message_count += 1
-            if self.message_count == 30:
+            if self.message_count == 31:
                 q = get_random_quote()
                 post_quote(event.channel_id, q["quote"], q["quotee"])
                 self.message_count = 0
