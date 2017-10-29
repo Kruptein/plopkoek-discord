@@ -89,7 +89,7 @@ class QuoteBot(Bot):
     @command('random', fmt="[quotee]")
     def send_random_quote(self, event, args):
         """
-        Send a random quote.
+        Send a "random" quote.
         This is triggered by a `!quotebot random [username]` command.
         """
         quotes = get_value('quotebot', 'quotes')
