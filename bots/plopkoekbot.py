@@ -82,7 +82,7 @@ def remove_plopkoek(user_to_id, user_from_id, channel_id, message_id):
         Channel.create_message(channel_id=dm.json()['id'], content=content)
 
         dm = User.create_dm(recipient_id=user_from_id)
-        content = 'Je hebt een plopkoek die je aan <@{}> hebt gegeven teruggenomen.  ' \
+        content = 'Je hebt een plopkoek die je aan <@{}> hebt gegeven teruggenomen. (Evil bastard!) ' \
                   'Je kan er vandaag nog {} uitgeven.'.format(user_to_id, get_donations_left(user_from_id))
         Channel.create_message(channel_id=dm.json()['id'], content=content)
     conn.close()
@@ -264,7 +264,7 @@ class PlopkoekBot(Bot):
 
         try:
             dm = User.create_dm(recipient_id=user_to_id)
-            content = 'Je hebt een plopkoek van <@{}> gekregen!  Je hebt er nu {} deze maand verzameld.'.format(
+            content = 'Je hebt een plopkoek van <@{}> gekregen!  Je hebt er nu {} deze maand verzameld. Goe bezig!'.format(
                 user_from_id, get_income(user_to_id, '%m'))
             Channel.create_message(channel_id=dm.json()['id'], content=content, embed=embed)
         except KeyError:
