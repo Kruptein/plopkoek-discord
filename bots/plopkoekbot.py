@@ -272,8 +272,12 @@ class PlopkoekBot(Bot):
 
         try:
             dm = User.create_dm(recipient_id=user_from_id)
-            content = 'Je hebt een plopkoek aan <@{}> gegeven.  Je kan er vandaag nog {} uitgeven.' \
-                .format(user_to_id, get_donations_left(user_from_id))
+            if get_donations_left(user_from_id) == 0:
+                content = 'Je hebt een plopkoek aan <@{}> gegeven.  Da was uwe laatste plopkoek van vandaag, geefde gij ook zo gemakkelijk geld uit?' \
+                    .format(user_to_id)
+            else:
+                content = 'Je hebt een plopkoek aan <@{}> gegeven.  Je kan er vandaag nog {} uitgeven. Spenden die handel!' \
+                    .format(user_to_id, get_donations_left(user_from_id))
             Channel.create_message(channel_id=dm.json()['id'], content=content, embed=embed)
         except KeyError:
             self.logger.critical("Could not send message to plopkoek donator")
