@@ -149,7 +149,7 @@ class RtmHandler:
                         'name': "Plopkoek Factory",
                         'type': 0
                     },
-                    'status': 'invisible',
+                    'status': 'online',
                     'afk': False
                 }
             }
