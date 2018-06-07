@@ -11,7 +11,7 @@ from enum import IntEnum
 from api import db
 
 ROOTDIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-API_VERSION = 5
+API_VERSION = 6
 USE_CACHE = True
 
 WRITE_LOCK = threading.Lock()

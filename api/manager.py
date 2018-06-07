@@ -21,6 +21,7 @@ def start_bots(threaded=False, bots=None):
     g.run(threaded)
     return g
 
+
 if __name__ == '__main__':
     if len(sys.argv) >= 2:
         start_bots(threaded=False, bots=sys.argv[1:])
