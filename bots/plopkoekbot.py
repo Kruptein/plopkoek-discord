@@ -13,7 +13,7 @@ from api.decorators import command
 from api.gateway import Bot
 from api.utils import get_value, get_logger
 from api.web import Channel, User
-from plots import plotly_chord
+# from plots import plotly_chord
 
 general_channel_id = get_value("main", "general_channel_id")
 plopkoek_emote = "<:plop:236155120067411968>"

@@ -139,13 +139,19 @@ class RtmHandler:
                 'properties': {
                     '$os': 'linux',
                     '$browser': 'plopkoek-bot',
-                    '$device': 'plopkoek-bot',
-                    '$referrer': '',
-                    '$referring_domain': ''
+                    '$device': 'plopkoek-bot'
                 },
                 'compress': False,
                 'large_threshold': 50,
-                'shard': [0, 1]
+                'shard': [0, 1],
+                'presence': {
+                    'game': {
+                        'name': "Plopkoek Factory",
+                        'type': 0
+                    },
+                    'status': 'online',
+                    'afk': False
+                }
             }
         }))
 
