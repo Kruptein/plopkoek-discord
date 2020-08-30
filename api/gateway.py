@@ -52,7 +52,9 @@ class RtmHandler:
         Setup the log handlers.
         This includes a file logger which logs to the config directory and a stream logger to log to console.
         """
-        formatter = logging.Formatter('%(threadName)s: %(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter(
+            "%(threadName)s: %(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
         # add file logger
         path = get_log_path(self.__class__.__name__)
         os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -73,35 +75,37 @@ class RtmHandler:
         """
         self.logger.debug("Initializing websocket")
         url = Gateway.get_url()
-        ws = websocket.create_connection("{}/?v={}&encoding=json".format(url, API_VERSION))
+        ws = websocket.create_connection(
+            "{}/?v={}&encoding=json".format(url, API_VERSION)
+        )
         ws.sock.settimeout(3)
 
         hello = json.loads(ws.recv())
-        if hello['op'] == 10:
-            self.heartbeat_interval = hello['d']['heartbeat_interval']
+        if hello["op"] == 10:
+            self.heartbeat_interval = hello["d"]["heartbeat_interval"]
         else:
             raise Exception("Did not receive hello? Got: {}".format(hello))
 
         # first try resuming
         self.__send_resume(ws)
         ready = json.loads(ws.recv())
-        #if ready['op'] == 0 and ready['t'] == 'READY':
+        # if ready['op'] == 0 and ready['t'] == 'READY':
         #    self.logger.critical("Resuming..")
         #    get_event(ready)
-        if ready['op'] == 9 and not ready['d']:
+        if ready["op"] == 9 and not ready["d"]:
             self.logger.critical("Failed to resume, starting up blank")
             # if resuming failed identify
             self.__send_identify(ws)
 
             ready = json.loads(ws.recv())
-            if ready['op'] == 0 and ready['t'] == 'READY':
+            if ready["op"] == 0 and ready["t"] == "READY":
                 get_event(ready)  # Parse the ready event
             else:
                 raise Exception("Did not receive ready? Got: {}".format(hello))
         else:
             self.logger.critical("Resuming..")
             self.logger.critical(ready)
-        #else:
+        # else:
         #    self.logger.critical("Failed to resume.")
         #    self.logger.critical(ready)
         #    raise Exception("RIP")
@@ -116,44 +120,49 @@ class RtmHandler:
         while True:
             try:
                 event = json.loads(self.__socket.recv())
-                self.logger.critical("OP:{} T:{}".format(event['op'], event['t']))
+                self.logger.critical("OP:{} T:{}".format(event["op"], event["t"]))
                 yield get_event(event)
-            except websocket.WebSocketTimeoutException:
+            except:
                 return
 
     def __send_resume(self, ws):
-        ws.send(json.dumps({
-            'op': 6,
-            'd': {
-                'token': get_value("main", "discord-token"),
-                'session_id': get_value("main", "last_session_id"),
-                'seq': get_value("main", "last_sequence_id")
-            }
-        }))
+        ws.send(
+            json.dumps(
+                {
+                    "op": 6,
+                    "d": {
+                        "token": get_value("main", "discord-token"),
+                        "session_id": get_value("main", "last_session_id"),
+                        "seq": get_value("main", "last_sequence_id"),
+                    },
+                }
+            )
+        )
 
     def __send_identify(self, ws):
-        ws.send(json.dumps({
-            'op': 2,
-            'd': {
-                'token': get_value("main", "discord-token"),
-                'properties': {
-                    '$os': 'linux',
-                    '$browser': 'plopkoek-bot',
-                    '$device': 'plopkoek-bot'
-                },
-                'compress': False,
-                'large_threshold': 50,
-                'shard': [0, 1],
-                'presence': {
-                    'game': {
-                        'name': "Plopkoek Factory",
-                        'type': 0
+        ws.send(
+            json.dumps(
+                {
+                    "op": 2,
+                    "d": {
+                        "token": get_value("main", "discord-token"),
+                        "properties": {
+                            "$os": "linux",
+                            "$browser": "plopkoek-bot",
+                            "$device": "plopkoek-bot",
+                        },
+                        "compress": False,
+                        "large_threshold": 50,
+                        "shard": [0, 1],
+                        "presence": {
+                            "game": {"name": "Plopkoek Factory", "type": 0},
+                            "status": "online",
+                            "afk": False,
+                        },
                     },
-                    'status': 'online',
-                    'afk': False
                 }
-            }
-        }))
+            )
+        )
 
     def run(self, threaded=True):
         """
@@ -161,12 +170,25 @@ class RtmHandler:
         If `threaded` is True, this method will be run in a seperate thread.
         """
         if threaded:
-            self.run_thread = threading.Thread(target=self.run, args=(self, False), daemon=True)
+            self.run_thread = threading.Thread(
+                target=self.run, args=(self, False), daemon=True
+            )
             self.run_thread.start()
         else:
             self.logger.info("Started running")
             while True:
-                self.__run(self)
+                try:
+                    self.__run(self)
+                except (
+                    TimeoutError,
+                    websocket.WebSocketConnectionClosedException,
+                    websocket.WebSocketTimeoutException,
+                    ConnectionResetError,
+                    BrokenPipeError,
+                ) as e:
+                    self.logger.warning("ws_init timed out, restarting in 10")
+                    self.logger.error(e)
+                    time.sleep(10)
 
     def __run(self, parent):
         """
@@ -177,25 +199,32 @@ class RtmHandler:
         self.__init_websocket()
         while True:
             try:
-                #self.logger.critical(self.__socket)
-                if (datetime.now() - self.heartbeat_last).total_seconds() >= self.heartbeat_interval // 1000:
-                    self.__socket.send(json.dumps({'op': 1, 'd': self.last_seq}))
+                # self.logger.critical(self.__socket)
+                if (
+                    datetime.now() - self.heartbeat_last
+                ).total_seconds() >= self.heartbeat_interval // 1000:
+                    self.__socket.send(json.dumps({"op": 1, "d": self.last_seq}))
                 for event in self.__read_socket():
                     if event.is_dispatch:
                         self.last_seq = event.sequence
                         parent.execute_event(event)
                     elif event.of(GatewayOP.HEARTBEAT_ACK):
                         self.heartbeat_last = datetime.now()
-            except (TimeoutError, websocket.WebSocketConnectionClosedException, websocket.WebSocketTimeoutException,
-                    ConnectionResetError) as e:
-                parent.logger.warning('Run timed out, restarting in 10 seconds.')
+            except (
+                TimeoutError,
+                websocket.WebSocketConnectionClosedException,
+                websocket.WebSocketTimeoutException,
+                ConnectionResetError,
+                BrokenPipeError,
+            ) as e:
+                parent.logger.warning("Run timed out, restarting in 10 seconds.")
                 parent.logger.error(e)
                 time.sleep(10)
                 return
             except ValueError as e:
                 parent.logger.warning(e)
 
-    def start_bot(self, bot: 'Bot'):
+    def start_bot(self, bot: "Bot"):
         self.bots.append(bot)
 
     def execute_event(self, event):
@@ -214,9 +243,16 @@ class Bot(metaclass=CommandRegisterType):
     An extension of the RtmHandler class that provides automatic help support based on help files.
     If no help files are found for the bot, a default help message will appear.
     """
+
     command_register = {}
 
-    def __init__(self, botname, icon_url=None, stream_log_level=logging.WARNING, file_log_level=logging.INFO):
+    def __init__(
+        self,
+        botname,
+        icon_url=None,
+        stream_log_level=logging.WARNING,
+        file_log_level=logging.INFO,
+    ):
         self.botname = botname
         self.icon_url = icon_url
 
@@ -234,7 +270,9 @@ class Bot(metaclass=CommandRegisterType):
         Setup the log handlers.
         This includes a file logger which logs to the config directory and a stream logger to log to console.
         """
-        formatter = logging.Formatter('%(threadName)s: %(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter(
+            "%(threadName)s: %(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
         # add file logger
         path = get_log_path(self.__class__.__name__)
         os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -264,8 +302,9 @@ class Bot(metaclass=CommandRegisterType):
             return False
         if text is None:
             return False
-        if text.lower().startswith("!{} ".format(self.botname.lower())) or text.lower() == "!{}".format(
-                self.botname.lower()):
+        if text.lower().startswith(
+            "!{} ".format(self.botname.lower())
+        ) or text.lower() == "!{}".format(self.botname.lower()):
             return True
         return False
 
@@ -276,7 +315,7 @@ class Bot(metaclass=CommandRegisterType):
         Overwrite this method if you want to act on an event and be sure to call super() if you want to use the
         provided help support.
         """
-        if event.of_t('MESSAGE_CREATE'):
+        if event.of_t("MESSAGE_CREATE"):
             if self.is_bot_command(event):
                 commands = []
                 if len(event.content) > len(self.botname) + 1:
@@ -289,11 +328,12 @@ class Bot(metaclass=CommandRegisterType):
         a botcommand.
         The command will contain the command string or will ne None if no further command was given.
         """
+
         def start_command(command):
             cmd, fmt = Bot.command_register[self.__class__.__qualname__][command]
             try:
                 prefix = len(self.botname) + 2  # bot token + botname + space
-                if command != '*':
+                if command != "*":
                     prefix += len(command) + 1
                 format_type = parser.apply_format(fmt, event.content[prefix:])
             except AttributeError as e:
@@ -310,12 +350,12 @@ class Bot(metaclass=CommandRegisterType):
             self.show_help(event.channel_id, help_command)
         elif self.has_command(commands[0]):
             start_command(commands[0])
-        elif self.has_command('*'):
-            start_command('*')
+        elif self.has_command("*"):
+            start_command("*")
 
-    def show_help(self, channel_id, command='__self__'):
+    def show_help(self, channel_id, command="__self__"):
         try:
-            help_messages = get_value('help', self.botname)
+            help_messages = get_value("help", self.botname)
         except KeyError:
             Channel.create_message(channel_id, "I don't provide help. :kappa:")
             return
@@ -329,4 +369,6 @@ class Bot(metaclass=CommandRegisterType):
                 other_commands += ", {}".format(help_command)
             Channel.create_message(channel_id, other_commands)
         else:
-            Channel.create_message(channel_id, "help for {} is not available.".format(command))
+            Channel.create_message(
+                channel_id, "help for {} is not available.".format(command)
+            )
