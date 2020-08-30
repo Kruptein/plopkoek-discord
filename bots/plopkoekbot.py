@@ -17,8 +17,8 @@ from api.web import Channel, User
 # from plots import plotly_chord
 
 general_channel_id = get_value("main", "general_channel_id")
-plopkoek_emote = "<:plop:236155120067411968>"
-# plopkoek_emote = "<:lock:259731815651082251>"
+# plopkoek_emote = "<:plop:236155120067411968>"
+plopkoek_emote = "<:lock:259731815651082251>"
 
 
 def init_db():
@@ -333,13 +333,14 @@ class PlopkoekBot(Bot):
 
         try:
             dm = User.create_dm(recipient_id=user_from_id)
-            if get_donations_left(user_from_id) == 0:
+            left = get_donations_left(user_from_id)
+            if left == 0:
                 content = "Je hebt een plopkoek aan <@{}> gegeven.  Da was uwe laatste plopkoek van vandaag, geefde gij ook zo gemakkelijk geld uit?".format(
                     user_to_id
                 )
             else:
                 content = "Je hebt een plopkoek aan <@{}> gegeven.  Je kan er vandaag nog {} uitgeven. Spenden die handel!".format(
-                    user_to_id, get_donations_left(user_from_id)
+                    user_to_id, left
                 )
             Channel.create_message(
                 channel_id=dm.json()["id"], content=content, embed=embed
