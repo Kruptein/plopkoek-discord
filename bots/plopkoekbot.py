@@ -17,8 +17,9 @@ from api.web import Channel, User
 # from plots import plotly_chord
 
 general_channel_id = get_value("main", "general_channel_id")
-# plopkoek_emote = "<:plop:236155120067411968>"
-plopkoek_emote = "<:lock:259731815651082251>"
+plopkoek_emote = "<:plop:236155120067411968>"
+# plopkoek_emote = "<:lock:259731815651082251>"
+bot_ids = ["243471854172504067", "243852628788903937"]
 
 
 def init_db():
@@ -115,6 +116,21 @@ def remove_plopkoek_reaction(event):
         message = Channel.get_message(event.channel_id, event.message_id)
         receiver = message["author"]["id"]
         donator = event.user_id
+
+        if receiver in bot_ids:
+            username = message["author"]["username"]
+            quote_content = message["content"]
+            if username == "plopkoek" and " -" in quote_content:
+                quote_content = "-".join(quote_content.split(" -")[:-1])
+            for quotee, quotes in get_value("quotebot", "quotes").items():
+                for quote in quotes:
+                    if (
+                        quote["quote"] == quote_content
+                        and quotee.startswith("<@")
+                        and quotee.endswith(">")
+                    ):
+                        receiver = quotee.strip("<@!>")
+                        print("Removing quote")
 
         remove_plopkoek(receiver, donator, event.channel_id, event.message_id)
 
@@ -289,6 +305,20 @@ class PlopkoekBot(Bot):
                 )
                 return
             donator = event.user_id
+
+            if receiver in bot_ids:
+                username = message["author"]["username"]
+                quote_content = message["content"]
+                if username == "plopkoek" and " -" in quote_content:
+                    quote_content = "-".join(quote_content.split(" -")[:-1])
+                for quotee, quotes in get_value("quotebot", "quotes").items():
+                    for quote in quotes:
+                        if (
+                            quote["quote"] == quote_content
+                            and quotee.startswith("<@")
+                            and quotee.endswith(">")
+                        ):
+                            receiver = quotee.strip("<@!>")
 
             self.add_plopkoek(receiver, donator, event.channel_id, event.message_id)
 
