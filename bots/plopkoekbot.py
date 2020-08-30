@@ -73,7 +73,7 @@ def get_donations_left(user_id):
         (user_id,),
     ).fetchone()
     conn.close()
-    return 4 - count["count"]
+    return 5 - count["count"]
 
 
 def remove_plopkoek(user_to_id, user_from_id, channel_id, message_id):
