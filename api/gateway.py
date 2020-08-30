@@ -122,7 +122,9 @@ class RtmHandler:
                 event = json.loads(self.__socket.recv())
                 self.logger.critical("OP:{} T:{}".format(event["op"], event["t"]))
                 yield get_event(event)
-            except:
+            except Exception as e:
+                if not isinstance(e, (websocket.WebSocketTimeoutException)):
+                    self.logger.exception("Read socket exception")
                 return
 
     def __send_resume(self, ws):
@@ -189,6 +191,8 @@ class RtmHandler:
                     self.logger.warning("ws_init timed out, restarting in 10")
                     self.logger.error(e)
                     time.sleep(10)
+                except KeyboardInterrupt:
+                    return
 
     def __run(self, parent):
         """
