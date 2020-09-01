@@ -3,6 +3,7 @@ Provides a quotebot allowing users to add and traverse quotes.
 """
 
 import logging
+import string
 from datetime import datetime
 from operator import itemgetter
 
@@ -93,10 +94,9 @@ def remove_plopkoek(user_to_id, user_from_id, channel_id, message_id):
         conn.commit()
 
         dm = User.create_dm(recipient_id=user_to_id)
-        content = "<@{}> heeft een plopkoek afgepakt :O  Je hebt er nu nog {} deze maand over.".format(
-            user_from_id, get_income(user_to_id, "%m")
-        )
-        Channel.create_message(channel_id=dm.json()["id"], content=content)
+        content = '<@{}> heeft een plopkoek afgepakt :O  Je hebt er nu nog {} deze maand over.' \
+            .format(user_from_id, get_income(user_to_id, '%Y-%m'))
+        Channel.create_message(channel_id=dm.json()['id'], content=content)
 
         dm = User.create_dm(recipient_id=user_from_id)
         content = (
@@ -215,6 +215,17 @@ def __process_ranking_data(received_data, donated_data):
     return list_data
 
 
+def filter_ascii_only(data):
+    return [
+        [
+            d[0],
+            d[1],
+            ''.join([c for c in d[2] if c in string.printable])
+        ]
+        for d in data
+    ]
+
+
 class PlopkoekBot(Bot):
     def __init__(self, stream_log_level=logging.DEBUG, file_log_level=logging.INFO):
         super().__init__(
@@ -228,10 +239,8 @@ class PlopkoekBot(Bot):
     def show_total(self, event, args):
         user_id = event.author["id"]
         if args.user_id:
-            user_id = args.user_id.strip("<@!>")
-        message = "<@!{}> has so far earned {} plopkoeks this month.".format(
-            user_id, get_income(user_id, "%m")
-        )
+            user_id = args.user_id.strip('<@!>')
+        message = "<@!{}> has so far earned {} plopkoeks this month.".format(user_id, get_income(user_id, '%Y-%m'))
         Channel.create_message(event.channel_id, message)
 
     @command("grandtotal", fmt="[user_id]")
@@ -250,13 +259,9 @@ class PlopkoekBot(Bot):
         if not data:
             Channel.create_message(event.channel_id, "No data for the given period :(")
         while data:
-            message = tabulate(
-                data[:10],
-                headers=["received", "donated", "user"],
-                tablefmt="fancy_grid",
-            )
-            message = "```" + message + "```"
-            Channel.create_message(event.channel_id, message)
+            table_data = filter_ascii_only(data[:10])
+            message = tabulate(table_data, headers=['received', 'donated', 'user'], tablefmt='fancy_grid')
+            Channel.create_message(event.channel_id, f'```{message}```')
             data = data[10:]
 
     @command("grandleaders")
@@ -265,13 +270,9 @@ class PlopkoekBot(Bot):
         if not data:
             Channel.create_message(event.channel_id, "No data for the given period :(")
         while data:
-            message = tabulate(
-                data[:10],
-                headers=["received", "donated", "user"],
-                tablefmt="fancy_grid",
-            )
-            message = "```" + message + "```"
-            Channel.create_message(event.channel_id, message)
+            table_data = filter_ascii_only(data[:10])
+            message = tabulate(table_data, headers=['received', 'donated', 'user'], tablefmt='fancy_grid')
+            Channel.create_message(event.channel_id, f'```{message}```')
             data = data[10:]
 
     def donate_plopkoek(self, event):
@@ -352,12 +353,9 @@ class PlopkoekBot(Bot):
 
         try:
             dm = User.create_dm(recipient_id=user_to_id)
-            content = "Je hebt een plopkoek van <@{}> gekregen!  Je hebt er nu {} deze maand verzameld. Goe bezig!".format(
-                user_from_id, get_income(user_to_id, "%m")
-            )
-            Channel.create_message(
-                channel_id=dm.json()["id"], content=content, embed=embed
-            )
+            content = 'Je hebt een plopkoek van <@{}> gekregen!  Je hebt er nu {} deze maand verzameld. Goe bezig!'.format(
+                user_from_id, get_income(user_to_id, '%Y-%m'))
+            Channel.create_message(channel_id=dm.json()['id'], content=content, embed=embed)
         except KeyError:
             self.logger.critical("Could not send message to plopkoek receiver")
 
