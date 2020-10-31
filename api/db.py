@@ -154,11 +154,12 @@ def update_channel(data):
     guild_id = None
     user_id = None
     name = None
-    if 'recipient' in data:
-        update_user(data['recipient'])
-        user_id = data['recipient']['id']
+    if 'recipients' in data:
+        for rec in data['recipients']:
+            update_user(rec)
+            user_id = rec['id']
     else:
-        guild_id = data['guild_id']
+        guild_id = data.get('guild_id', '')
         name = data['name']
 
     conn = get_conn()

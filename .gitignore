@@ -7,3 +7,4 @@ config/*
 !config/help
 
 logs/*
+venv/*

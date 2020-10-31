@@ -37,10 +37,10 @@ class Guild:
 
 class Channel:
     @staticmethod
-    def create_message(channel_id: int, content: str, embed=None):
+    def create_message(channel_id: int, content: str, embed=None, tts: bool = False):
         if not embed:
             embed = {}
-        return post("/channels/{}/messages".format(channel_id), {'content': content, 'embed': embed})
+        return post("/channels/{}/messages".format(channel_id), {'content': content, 'embed': embed, 'tts': tts})
 
     @staticmethod
     def get_message(channel_id: int, message_id: int):
@@ -68,6 +68,6 @@ class User:
 
 class Webhook:
     @staticmethod
-    def execute_content(webhook_id: int, token: str, content: str, username: str = None, avatar_url: str = None):
+    def execute_content(webhook_id: int, token: str, content: str, username: str = None, avatar_url: str = None, tts: bool = False):
         return post("/webhooks/{}/{}".format(webhook_id, token),
-                    {'content': content, 'username': username, 'avatar_url': avatar_url})
+                    {'content': content, 'username': username, 'avatar_url': avatar_url, 'tts': tts})

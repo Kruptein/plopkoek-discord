@@ -52,15 +52,20 @@ def post_message(channel_id, content):
 
 
 def post_quote(channel_id, quote, quotee):
+    tts = False
+    if quote.startswith("/tts"):
+        quote = quote[5:]
+        tts = True
+    print(tts)
     if channel_id == general_channel_id:
         avatar_url = quote_url
         if quotee.startswith("<@") and quotee.endswith(">"):
             user = User.get_user(quotee.strip("<@!>"))
             avatar_url = User.get_avatar_url(user)
             quotee = user['username']
-        Webhook.execute_content(webhook_id, webhook_token, quote, quotee, avatar_url=avatar_url)
+        Webhook.execute_content(webhook_id, webhook_token, quote, quotee, avatar_url=avatar_url, tts=tts)
     else:
-        Channel.create_message(channel_id, "{} - {}".format(quote, get_username(quotee)))
+        Channel.create_message(channel_id, "{} - {}".format(quote, get_username(quotee)), tts=tts)
 
 
 class QuoteBot(Bot):
@@ -119,6 +124,9 @@ class QuoteBot(Bot):
         if quotee in quotes.keys():
             msg = "{}'s quotes are: ".format(get_username(quotee))
             msg += " | ".join([q['quote'] for q in quotes[quotee]])
+        elif args.quotee in quotes.keys():
+            msg = "{}'s quotes are: ".format(args.quotee)
+            msg += " | ".join([q['quote'] for q in quotes[args.quotee]])
         else:
             msg = "Could not find {} in the pokedex :(\nUse `!quotebot quotees` to list all users with a quote.".format(
                 quotee)
@@ -160,7 +168,7 @@ class QuoteBot(Bot):
                 msg = "Could not find {} saying {} in the pokedex :c".format(quotee, sentence)
             else:
                 if len(found) == 1:
-                    Channel.create_message(event.channel_id, "{} - {}".format(found[0], quotee))
+                    post_quote(event.channel_id, found[0], quotee)
                     return
                 msg = "Found these quotes for {} containing {}: ".format(quotee, sentence)
                 msg += " | ".join(found)
