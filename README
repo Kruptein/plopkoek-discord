@@ -2,3 +2,14 @@ Plopkoek Discord Bots
 ======================
 
 This repository is a collection of discord bots for the plopkoek discord server.
+
+To run bots use `python -m api.manager <bot A> <bot B> ...`
+e.g. (`python -m api.manager quote plopkoek`)
+
+Current supported bots are:
+
+- quote: Provides a quotebot
+- plopkoek: Provides a bot that handles an imaginary plopkoek currency
+- echo: Purely for basic testing purposes, echoes all chat messages
+
+Bot code can be found in `cogs/`, bot configuration should be done in `/config`
