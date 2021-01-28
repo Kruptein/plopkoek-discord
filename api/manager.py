@@ -1,29 +1,23 @@
-import importlib
-import os
 import sys
+from typing import List
 
-from api.gateway import RtmHandler
+from discord.ext.commands import Bot
 
+from api.utils import get_value
 
-def start_bots(threaded=False, bots=None):
-    g = RtmHandler()
-    if bots is None:
-        for fl in os.listdir("bots"):
-            if fl.startswith("__") or not fl.endswith(".py"):
-                continue
-
-            mod = importlib.import_module("bots.{}".format(fl[:-3]))
-            g.start_bot(getattr(mod, "{}Bot".format(fl[:-3].split("bot")[0].capitalize()))())
-    else:
-        for bot in bots:
-            mod = importlib.import_module("bots.{}".format(bot))
-            g.start_bot(getattr(mod, "{}Bot".format(bot.split("bot")[0].capitalize()))())
-    g.run(threaded)
-    return g
+prefixes = ("!quotebot ", "!plopkoekbot ", "!qb ", "!pk ")
+if get_value("main", "test_env"):
+    prefixes = tuple(f"~{prefix[1:]}" for prefix in prefixes)
 
 
-if __name__ == '__main__':
-    if len(sys.argv) >= 2:
-        start_bots(threaded=False, bots=sys.argv[1:])
-    else:
-        start_bots(threaded=False)
+def start_cogs(cogs: List[str]):
+    bot = Bot(command_prefix=prefixes)
+
+    for cog in cogs:
+        bot.load_extension(f"cogs.{cog}")
+
+    bot.run(get_value("main", "discord_token"))
+
+
+if __name__ == "__main__":
+    start_cogs(cogs=sys.argv[1:])

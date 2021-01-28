@@ -1,5 +1,4 @@
 from datetime import datetime
-from operator import itemgetter
 from api import db
 
 
