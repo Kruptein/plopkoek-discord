@@ -1,54 +1,27 @@
-"""
-A collection of decorators.
-"""
+import functools
 
-from functools import wraps
+from discord.ext import commands
+from discord.ext.commands.context import Context
 
-from api import local
-from api import utils
-from api.exceptions import NotCachedException
+from .cog import PlopCog
 
 
-def cache(update_func):
-    """
-    If CacheBot is running, try to fetch a cached version of the function call.
-    Else just run the actual function.
-    """
-
-    def inner_cache(orig_func):
-        @wraps(orig_func)
-        def decorator(*args, **kwargs):
-            if not utils.USE_CACHE:
-                return orig_func(*args, **kwargs)
-
-            try:
-                cls, f = orig_func.__qualname__.split(".")
-                local_func = getattr(getattr(local, cls), f)
-            except AttributeError:
-                # there is no local version of this endpoint, so return live function
-                return orig_func(*args, **kwargs)
-            else:
-                try:
-                    return local_func(*args, **kwargs)
-                except NotCachedException:
-                    # Use the live version and cache the value
-                    data = orig_func(*args, **kwargs)
-                    update_func(data)
-                    return data
-
-        return decorator
-
-    return inner_cache
+def noop():
+    pass
 
 
-def command(*names, fmt='*'):
-    """
-    Registers the provided names as aliases for the decorated function.
-     Usage: @command('commandname') or @command('name1', 'name2', ..., 'nameN')
-    """
+def command(name: str):
+    def func_wrapper(func):
+        @functools.wraps(func)
+        async def wrapper(cls: PlopCog, ctx: Context, *args, **kwargs):
+            if cls.prefixes:
+                if not any(
+                    ctx.message.content[1:].startswith(prefix)
+                    for prefix in cls.prefixes
+                ):
+                    return noop()
+            return await func(cls, ctx, *args, **kwargs)
 
-    def decorator(func):
-        func.command = (names, fmt)
-        return func
+        return commands.command(name=name)(wrapper)
 
-    return decorator
+    return func_wrapper

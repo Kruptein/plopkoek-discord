@@ -2,101 +2,54 @@
 A collection of various utilities.
 """
 import json
-import logging
 import os
-import pickle
 import threading
-from enum import IntEnum
-
-from api import db
 
 ROOTDIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 API_VERSION = 6
-USE_CACHE = True
 
 WRITE_LOCK = threading.Lock()
-
-
-class ConfigFormat(IntEnum):
-    JSON = 0
-    PICKLE = 1
-
-
-def activate_cache():
-    global USE_CACHE
-    USE_CACHE = True
-    db.create_basic_discord_cache()
-
-
-def get_log_path(name):
-    return os.path.join(ROOTDIR, "logs", "{}.log".format(name))
-
-
-def get_logger(name, file_log_level=logging.INFO, stream_log_level=logging.INFO):
-    logger = logging.getLogger(name)
-    formatter = logging.Formatter('%(threadName)s: %(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    # add file logger
-    path = get_log_path(name)
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    fh = logging.FileHandler(path)
-    fh.setLevel(file_log_level)
-    fh.setFormatter(formatter)
-    logger.addHandler(fh)
-    # add stream logger
-    sh = logging.StreamHandler()
-    sh.setLevel(stream_log_level)
-    sh.setFormatter(formatter)
-    logger.addHandler(sh)
-    return logger
 
 
 def has_config(name) -> bool:
     return os.path.exists(os.path.join(ROOTDIR, "config", name))
 
 
-def get_data(name, data_format=ConfigFormat.JSON):
+def get_data(name):
     """
     Retrieves the content of the config file for the given name.
     These config files are supposed to be located in the "config" directory.
     """
     cfgpath = os.path.join(ROOTDIR, "config", name)
-    open(cfgpath, 'a').close()  # create cfg file if it doesnt exist
-    if data_format == ConfigFormat.JSON:
-        with open(cfgpath, 'r') as f:
-            data = json.load(f)
-    elif data_format == ConfigFormat.PICKLE:
-        with open(cfgpath, 'rb') as f:
-            data = pickle.load(f)
-    else:
-        raise Exception("Unknown dataformat")
+    open(cfgpath, "a").close()  # create cfg file if it doesnt exist
+
+    with open(cfgpath, "r") as f:
+        data = json.load(f)
+
     return data
 
 
-def set_data(name, data, data_format=ConfigFormat.JSON):
+def set_data(name, data):
     cfgpath = os.path.join(ROOTDIR, "config", name)
     with WRITE_LOCK:
-        if data_format == ConfigFormat.JSON:
-            with open(cfgpath, 'w') as f:
-                json.dump(data, f, indent=4, sort_keys=True)
-        elif data_format == ConfigFormat.PICKLE:
-            with open(cfgpath, 'wb') as f:
-                pickle.dump(data, f)
+        with open(cfgpath, "w") as f:
+            json.dump(data, f, indent=4, sort_keys=True)
 
 
-def get_value(name, var, data_format=ConfigFormat.JSON):
+def get_value(name, var):
     """
     Read the `var` value from the config for `name`.
     """
-    return get_data(name, data_format)[var]
+    return get_data(name)[var]
 
 
-def set_value(name, var, value, data_format=ConfigFormat.JSON):
+def set_value(name, var, value):
     """
     Set the `var` value from the config for `name` to `value`.
     """
     data = get_data(name)
     data[var] = value
-    set_data(name, data, data_format)
+    set_data(name, data)
 
 
 def pop_value(name, var, value):
@@ -116,26 +69,3 @@ def update_value(name, var, key, value):
     data = get_value(name, var)
     data[key] = value
     set_value(name, var, data)
-
-
-# todo: make channel_id optional, also allow guild_id etc
-def get_userid(username, channel_id):
-    if username.startswith("<@") and username.endswith(">"):
-        return username[2:-1]
-
-    return db.get_userid(username, channel_id)
-
-# def get_userid(quotee):
-#     """
-#     Return the user id of the given quotee.
-#     If quotee is a non formatted string, this function will attempt to lookup the id of the given user.
-#     If quotee is a <@ID> formatted string, this function will simply return that string.
-#     """
-#     if quotee.startswith("<@") and quotee.endswith(">"):
-#         return quotee
-#
-#     users = db.get_user_id()
-#     for user in users:
-#         if users[user]['username'] == quotee:
-#             return "<@" + user + ">"
-#     return quotee
