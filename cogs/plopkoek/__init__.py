@@ -7,7 +7,6 @@ from operator import itemgetter
 from typing import Optional, Union
 from discord.embeds import Embed
 
-from discord.ext.commands import command
 from discord.ext.commands.bot import Bot
 from discord.ext.commands.cog import Cog
 from discord.ext.commands.context import Context
@@ -18,6 +17,7 @@ from discord.user import User
 from tabulate import tabulate
 
 from api.cog import PlopCog
+from api.decorators import command
 from api.utils import get_value
 
 from .db import (
@@ -52,7 +52,7 @@ def filter_ascii_only(data):
 
 class PlopkoekCog(PlopCog):
     def __init__(self, bot: Bot):
-        super().__init__(bot)
+        super().__init__(bot, ("pk", "plopkoek"))
         init_db()
 
     @Cog.listener()
@@ -129,7 +129,7 @@ class PlopkoekCog(PlopCog):
 
             await self.remove_plopkoek(receiver, donator, message)
 
-    @command(name="total")
+    @command("total")
     async def show_total(self, ctx: Context, user: Optional[Union[Member, User]]):
         """
         Show the total number of plopkoeks acquired this month.
@@ -146,7 +146,7 @@ class PlopkoekCog(PlopCog):
         message = f"{user_name} has so far earned {get_income(user_id, '%Y-%m')} plopkoeks this month."
         await ctx.channel.send(message)
 
-    @command(name="grandtotal")
+    @command("grandtotal")
     async def show_grandtotal(self, ctx: Context, user: Optional[Union[Member, User]]):
         """
         Show the total number of plopkoeks acquired all time.
@@ -163,7 +163,7 @@ class PlopkoekCog(PlopCog):
         message = f"{user_name} has so far earned {get_total_income(user_id)} plopkoeks in total!."
         await ctx.channel.send(message)
 
-    @command(name="leaders")
+    @command("leaders")
     async def show_leaders(
         self, ctx: Context, month: Optional[str], year: Optional[str]
     ):
@@ -183,7 +183,7 @@ class PlopkoekCog(PlopCog):
             await ctx.channel.send(f"```{message}```")
             data = data[10:]
 
-    @command(name="grandleaders")
+    @command("grandleaders")
     async def show_grandleaders(self, ctx: Context):
         """
         Get the all-time leaderboard.

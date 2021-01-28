@@ -6,8 +6,9 @@ from discord.user import User
 
 
 class PlopCog(Cog):
-    def __init__(self, bot: Bot) -> None:
+    def __init__(self, bot: Bot, prefixes: Optional[str] = None) -> None:
         self.bot = bot
+        self.prefixes = prefixes
 
     @Cog.listener()
     async def on_ready(self):

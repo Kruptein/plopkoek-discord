@@ -13,11 +13,11 @@ from discord.ext.commands.cog import Cog
 from discord.member import Member
 from discord.message import Message
 from discord.user import User
-from discord.ext.commands import command
 from discord.ext.commands.bot import Bot
 from discord.ext.commands.context import Context
 
 from api.cog import PlopCog
+from api.decorators import command
 from api.utils import get_value, set_value
 
 
@@ -36,22 +36,6 @@ def get_random_quote():
         for quote in quotes:
             quotelist.append({"quote": quote["quote"], "quotee": quotee})
     return random.choice(quotelist)
-
-
-# def get_username(quotee):
-#     """
-#     Return the username of the given quotee.
-#     If quotee is a non formatted string, this function will simply return that string.
-#     If quotee is a <@ID> formatted string, ths function will retrieve the username for given user id.
-#     """
-#     if quotee.startswith("<@") and quotee.endswith(">"):
-#         try:
-#             return User.get_user(quotee[2:-1])["username"]
-#         except KeyError:
-#             get_logger("QuoteBot").exception(
-#                 "Failed to get username for {}".format(quotee)
-#             )
-#     return quotee
 
 
 async def post_message(channel: TextChannel, content: str):
@@ -93,7 +77,7 @@ class QuoteCog(PlopCog):
     """
 
     def __init__(self, bot: Bot):
-        super().__init__(bot)
+        super().__init__(bot, ("qb", "quotebot"))
         self.message_count: Dict[str, int] = defaultdict(int)
 
     @Cog.listener()
@@ -108,7 +92,7 @@ class QuoteCog(PlopCog):
             await post_quote(message.channel, q["quote"], user)
             self.message_count[message.channel.id] = 0
 
-    @command(name="add")
+    @command("add")
     async def add_quote(
         self, ctx: Context, user: Union[Member, User, str], *quote: str
     ):
@@ -130,7 +114,7 @@ class QuoteCog(PlopCog):
         set_value("quotebot", "quotes", quotes)
         await post_message(ctx.channel, content="Quote added!")
 
-    @command(name="random")
+    @command("random")
     async def send_random_quote(
         self, ctx: Context, user: Optional[Union[Member, User, str]]
     ):
@@ -160,7 +144,7 @@ class QuoteCog(PlopCog):
         except IndexError:
             post_message(ctx.channel, "No quotes..")
 
-    @command(name="list")
+    @command("list")
     async def list_quotes(self, ctx: Context, user: Union[Member, User, str]):
         """
         List all quotes for a given user.
@@ -181,7 +165,7 @@ class QuoteCog(PlopCog):
             msg = f"Could not find {user_name} :(\nUse `!quotebot quotees` to list all users with a quote)"
         await post_message(ctx.channel, msg)
 
-    @command(name="quotees")
+    @command("quotees")
     async def list_quotees(self, ctx: Context):
         """
         List all users with a quote in the database.
@@ -250,7 +234,7 @@ class QuoteCog(PlopCog):
         for message in messages:
             await post_message(ctx.channel, message)
 
-    @command(name="stats")
+    @command("stats")
     async def show_stats(self, ctx: Context):
         """
         Show the total quote count and a top 5 of users with most quotes
