@@ -89,6 +89,8 @@ class QuoteCog(PlopCog):
         if self.message_count[message.channel.id] == 31:
             q = get_random_quote()
             user = await self.get_user(q["quotee"])
+            if user is None:
+                user = q["quotee"]
             await post_quote(message.channel, q["quote"], user)
             self.message_count[message.channel.id] = 0
 
@@ -140,6 +142,8 @@ class QuoteCog(PlopCog):
             else:
                 q = get_random_quote()
                 user = await self.get_user(q["quotee"])
+                if user is None:
+                    user = q["quotee"]
                 await post_quote(ctx.channel, q["quote"], user)
         except IndexError:
             post_message(ctx.channel, "No quotes..")
