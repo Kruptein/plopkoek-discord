@@ -1,3 +1,2 @@
-requests
 tabulate
-websocket-client
+discord.py===1.6.0
